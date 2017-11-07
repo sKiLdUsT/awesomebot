@@ -163,9 +163,9 @@ process
 client.on('ready', () => {
   if (client.guilds.size === 0) {
     log.warn(`No guilds found. You can add this bot with this link: https://discordapp.com/oauth2/authorize?&client_id=${client.user.id}&scope=bot&permissions=0`)
-    // opn(`https://discordapp.com/oauth2/authorize?&client_id=${client.user.id}&scope=bot&permissions=0`)
+    opn(`https://discordapp.com/oauth2/authorize?&client_id=${client.user.id}&scope=bot&permissions=0`)
     // Silently handle error
-      // .error(() => {})
+      .error(() => {})
     if (cache.guilds !== undefined) delete cache.guilds
   } else {
     Array.from(client.guilds.values()).forEach((guild) => {
