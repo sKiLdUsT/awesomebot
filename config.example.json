@@ -1,0 +1,10 @@
+{
+  "App" : {
+    "commandPrefix" : ".",
+    "logLevel" : 2
+  },
+  "Discord": {
+    "token" : "",
+    "adminId" : ""
+  }
+}

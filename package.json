@@ -1,0 +1,22 @@
+{
+	"name": "Awesomebot",
+	"description": "An awesome bot for Discord",
+	"author": "sKiL <skil@skildust.com> (https://skildust.com)",
+	"version": "0.3.20171023",
+	"repository": "https://git.skildust.com/sKiL/awesomebot",
+	"license": "MIT",
+	"keywords": [
+		"bot",
+		"discord",
+		"music"
+	],
+	"main": "app.js",
+	"dependencies": {
+		"colors": "^1.1.2",
+		"discord.js": "^11.2.1",
+		"ffmpeg-binaries": "^3.2.2-3",
+		"node-opus": "^0.2.7",
+		"opn": "^5.1.0",
+		"youtube-dl": "^1.12.2"
+	}
+}
