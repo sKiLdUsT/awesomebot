@@ -41,11 +41,14 @@ Assign a specific value to a key, which may be one of the following:
 - *voiceChannel* - Set the default voice channel to connect to
 - *onlyListenIn* - Set the channel to accept commands from exclusively
 - *maxVolume* - Set the max volume allowed to be used
+- *maxLength* - Set the max media length allowed. Capped to 1 hour to prevent cluttering cache with long videos
 
 **Example**
 ```
 /set voiceChannel 369768568931221508
 /set onlyListenIn 369768568931221506
+/set maxVolume 100
+/set maxLength 900
 ```
 ---
 ### play (subject)

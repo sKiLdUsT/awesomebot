@@ -47,15 +47,17 @@ function enqueueSong (url, message) {
   let video = ytdl(vid, options)
   video
   .on('info', info => {
-    if (info._duration_raw > 900) {
+    let maxLength = cache.guilds[message.channel.guild.id].maxLength
+    if (maxLength === undefined) maxLength = 900
+    if (info._duration_raw > maxLength) {
       video.unresolve()
       video = undefined
-      message.channel.send('❌ Media longer than 15 minutes!')
+      message.channel.send(`❌ Media longer than ${maxLength / 60} minutes! (${info._duration_raw / 60} minutes)`)
       message.channel.stopTyping()
       return
     }
     info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
-    if (info.description.length > 900) {
+    if (info.description.length > maxLength) {
       info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
     }
     message.channel.send(`✅ Enqueued ${info.fulltitle}!`, {embed: {
@@ -171,7 +173,8 @@ client.on('ready', () => {
           },
           songQueue: [],
           volume: 0.2,
-          maxVolume: 100
+          maxVolume: 100,
+          maxLength: 900
         }
       }
       Array.from(guild.members.values()).forEach(user => {
@@ -193,7 +196,8 @@ client.on('ready', () => {
       },
       songQueue: [],
       volume: 0.2,
-      maxVolume: 100
+      maxVolume: 100,
+      maxLength: 900
     }
     Array.from(guild.members.values()).forEach(user => {
       if (user.id === client.user.id) return
@@ -389,6 +393,14 @@ client.on('ready', () => {
               message.channel.send('❌ Invalid value!')
               return
             }
+            args[2] = parseInt(args[2])
+            break
+          case 'maxLength':
+            if (!message.guild.channels.has(args[2]) && isNaN(args[2]) && parseInt(args[2]) > 3600) {
+              message.channel.send('❌ Invalid value!')
+              return
+            }
+            args[2] = parseInt(args[2])
             break
           default:
             message.channel.send('❌ Unknown key!')
