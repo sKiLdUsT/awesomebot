@@ -170,7 +170,8 @@ client.on('ready', () => {
             [config.Discord.adminId]: 2
           },
           songQueue: [],
-          volume: 0.2
+          volume: 0.2,
+          maxVolume: 100
         }
       }
       Array.from(guild.members.values()).forEach(user => {
@@ -191,7 +192,8 @@ client.on('ready', () => {
         [config.Discord.adminId]: 2
       },
       songQueue: [],
-      volume: 0.2
+      volume: 0.2,
+      maxVolume: 100
     }
     Array.from(guild.members.values()).forEach(user => {
       if (user.id === client.user.id) return
@@ -315,7 +317,9 @@ client.on('ready', () => {
         }
         break
       case 'vol':
-        cache.guilds[message.channel.guild.id].volume = (args[1] > 100 ? 100 : args[1]) / 100
+        let maxVolume = cache.guilds[message.channel.guild.id].maxVolume
+        if (maxVolume === undefined) maxVolume = 100
+        cache.guilds[message.channel.guild.id].volume = (args[1] > maxVolume ? maxVolume : args[1]) / 100
         if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) {
           message.channel.guild.dispatcher.setVolume(cache.guilds[message.channel.guild.id].volume)
         }
@@ -369,13 +373,19 @@ client.on('ready', () => {
         }
         switch (args[1]) {
           case 'voiceChannel':
-            if (!message.guild.channels.has(args[2])) {
+            if (!message.guild.channels.has(args[2]) && isNaN(args[2])) {
               message.channel.send('❌ Invalid value!')
               return
             }
             break
           case 'onlyListenIn':
-            if (!message.guild.channels.has(args[2])) {
+            if (!message.guild.channels.has(args[2]) && isNaN(args[2])) {
+              message.channel.send('❌ Invalid value!')
+              return
+            }
+            break
+          case 'maxVolume':
+            if (!message.guild.channels.has(args[2]) && isNaN(args[2])) {
               message.channel.send('❌ Invalid value!')
               return
             }

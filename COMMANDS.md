@@ -40,6 +40,7 @@ Revoke someone's permissions
 Assign a specific value to a key, which may be one of the following:
 - *voiceChannel* - Set the default voice channel to connect to
 - *onlyListenIn* - Set the channel to accept commands from exclusively
+- *maxVolume* - Set the max volume allowed to be used
 
 **Example**
 ```
