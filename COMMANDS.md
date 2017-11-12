@@ -56,7 +56,7 @@ Assign a specific value to a key, which may be one of the following:
 Play something according to the subject of either
 - *YouTube Link*
 - *Soundcloud Link*
-- *Generic search term to be lookup up on YouTube*
+- *Generic search term to be looked up on YouTube*
 
 **Example**
 ```
