@@ -115,21 +115,15 @@ function player (guildID) {
       guild.dispatcher.setVolume(cache.guilds[guildID].volume)
       guild.dispatcher.setBitrate(128)
       guild.dispatcher.duration = song.videoInfo._duration_raw
+      guild.dispatcher.song = song.videoInfo.fulltitle
       guild.dispatcher
         .on('end', () => {
           setTimeout(() => fs.unlinkSync(song.filename), 5000)
           player(guildID)
         })
       guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.videoInfo.fulltitle}" is now playing in ${connection.channel.name}!`)
-      client.user.setPresence({
-        game: {
-          name: song.videoInfo.fulltitle,
-          url: null
-        }
-      })
     }
   } else {
-    client.user.setPresence({game: null})
     client.guilds.get(guildID).voiceConnection.disconnect()
   }
 }
@@ -359,6 +353,10 @@ client.on('ready', () => {
             color: 0xc3c3c3
           }})
         } else message.channel.send('❌ Queue is empty!')
+        break
+      case 'np':
+        if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) message.channel.send(`ℹ Now Playing: \`${message.channel.guild.dispatcher.song}\``)
+        else message.channel.send('❌ Nothing is playing at the moment!')
         break
       case 'set':
         if (cache.guilds[message.channel.guild.id].permissions[message.author.id] !== 2) {

@@ -109,3 +109,12 @@ Shows current playlist.
 /queue
 ```
 ---
+---
+### np
+*Available to all permissions*
+Shows currently playing song.
+**Example**
+```
+/np
+```
+---
