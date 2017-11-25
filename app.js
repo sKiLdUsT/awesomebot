@@ -22,8 +22,7 @@ function guid () {
 }
 
 function searchYoutube (search, message) {
-  let origMessage = message
-  message.channel.send('⏳ Searching, give me a second...')
+  message.edit('⏳ Searching, give me a second...')
   .then(message => {
     message.channel.startTyping()
     ytdl.getInfo('ytsearch3:' + search, [], (err, info) => {
@@ -43,7 +42,7 @@ function searchYoutube (search, message) {
           urls.push('https://youtube.com/watch?v=' + video.display_id)
         })
         message.channel.stopTyping()
-        message.edit('ℹ I found the following videos! Choose one.', {embed: {
+        message.edit('ℹ I found the following videos, choose one.', {embed: {
           fields,
           footer: {
             text: 'Youtube Search'
@@ -70,20 +69,25 @@ function searchYoutube (search, message) {
           const collector = message.createReactionCollector(reaction => reaction.me && ['1⃣', '2⃣', '3⃣', '❌'].includes(reaction.emoji.name) && reaction.count > 1, {time: 15000})
           collector
             .on('collect', () => collector.stop())
-            .on('end', collected => {
-              message.delete()
+            .on('end', async collected => {
+              if (collected === undefined) {
+                message.delete()
+                return
+              }
+              let newMessage = await message.channel.send('⏳ Loading...')
+              await message.delete()
               switch (collected.first()._emoji.name) {
                 case '❌':
+                  message.delete()
                   break
                 case '1⃣':
-                  console.log(urls[0])
-                  enqueueSong(urls[0], origMessage)
+                  enqueueSong(urls[0], newMessage)
                   break
                 case '2⃣':
-                  enqueueSong(urls[1], origMessage)
+                  enqueueSong(urls[1], newMessage)
                   break
                 case '3⃣':
-                  enqueueSong(urls[2], origMessage)
+                  enqueueSong(urls[2], newMessage)
                   break
               }
             })
@@ -107,7 +111,7 @@ function enqueueSong (url, message) {
     author = 'Soundcloud'
     color = 0xff7700
   } else if (url.match(/(?:\w+:\/\/).+/)) {
-    message.channel.send('❌ Invalid URL!')
+    message.edit('❌ Invalid URL!')
     return
   } else {
     searchYoutube(url, message)
@@ -124,7 +128,7 @@ function enqueueSong (url, message) {
     if (info._duration_raw > maxLength) {
       video.unresolve()
       video = undefined
-      message.channel.send(`❌ Media longer than ${maxLength / 60} minutes! (${secondsToTimeString(info._duration_raw)})`)
+      message.edit(`❌ Media longer than ${maxLength / 60} minutes! (${secondsToTimeString(info._duration_raw)})`)
       message.channel.stopTyping()
       return
     }
@@ -132,7 +136,7 @@ function enqueueSong (url, message) {
     if (info.description.length > 900) {
       info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
     }
-    message.channel.send(`✅ Enqueued ${info.fulltitle}!`, {embed: {
+    message.edit(`✅ Enqueued ${info.fulltitle}!`, {embed: {
       title: info.fulltitle,
       fields: [{
         name: 'Description',
@@ -159,7 +163,7 @@ function enqueueSong (url, message) {
     message.channel.stopTyping()
   })
   .on('error', e => {
-    message.channel.send('❌ Something went wrong!\n```' + e.stack.replace(__dirname, '') + '```')
+    message.edit('❌ Something went wrong!\n```' + e.stack.replace(__dirname, '') + '```')
     video.unresolve()
     video = undefined
     message.channel.stopTyping()
@@ -367,7 +371,9 @@ client.on('ready', () => {
         else if (cache.guilds[message.guild.id].voiceChannel === undefined) {
           message.channel.send(`❌ You must define a voice channel first! (see \`${config.App.commandPrefix}help set\`)`)
         } else {
-          enqueueSong(message.content.replace(config.App.commandPrefix + 'play', ''), message)
+          let url = message.content.replace(config.App.commandPrefix + 'play', '')
+          message.channel.send('⏳ Loading...')
+            .then(message => enqueueSong(url, message))
         }
         break
       case 'pause':
