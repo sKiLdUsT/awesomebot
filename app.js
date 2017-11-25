@@ -21,6 +21,78 @@ function guid () {
     s4() + '-' + s4() + s4() + s4()
 }
 
+function searchYoutube (search, message) {
+  let origMessage = message
+  message.channel.send('⏳ Searching, give me a second...')
+  .then(message => {
+    message.channel.startTyping()
+    ytdl.getInfo('ytsearch3:' + search, [], (err, info) => {
+      if (err) message.edit(`❌ Something went wrong!\n\`\`\`${err}\`\`\``)
+      else {
+        let fields = []
+        let urls = []
+        info.forEach((video, index) => {
+          video.description = video.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
+          if (video.description.length > 128) {
+            video.description = video.description.replace(/^([^]{128}[^\s]*)?([^]+)/, '$1 ...')
+          }
+          fields.push({
+            name: `${index + 1}. ${video.fulltitle} [${video.uploader}]`,
+            value: video.description.length === 0 ? 'No description provided' : video.description
+          })
+          urls.push('https://youtube.com/watch?v=' + video.display_id)
+        })
+        message.channel.stopTyping()
+        message.edit('ℹ I found the following videos! Choose one.', {embed: {
+          fields,
+          footer: {
+            text: 'Youtube Search'
+          },
+          timestamp: new Date(),
+          color: 0xff0000
+        }}).then(async message => {
+          for (let i = 1; i <= info.length; i++) {
+            let emoji
+            switch (i) {
+              case 1:
+                emoji = '1⃣'
+                break
+              case 2:
+                emoji = '2⃣'
+                break
+              case 3:
+                emoji = '3⃣'
+                break
+            }
+            await message.react(emoji)
+          }
+          await message.react('❌')
+          const collector = message.createReactionCollector(reaction => reaction.me && ['1⃣', '2⃣', '3⃣', '❌'].includes(reaction.emoji.name) && reaction.count > 1, {time: 15000})
+          collector
+            .on('collect', () => collector.stop())
+            .on('end', collected => {
+              message.delete()
+              switch (collected.first()._emoji.name) {
+                case '❌':
+                  break
+                case '1⃣':
+                  console.log(urls[0])
+                  enqueueSong(urls[0], origMessage)
+                  break
+                case '2⃣':
+                  enqueueSong(urls[1], origMessage)
+                  break
+                case '3⃣':
+                  enqueueSong(urls[2], origMessage)
+                  break
+              }
+            })
+        })
+      }
+    })
+  })
+}
+
 function enqueueSong (url, message) {
   /* eslint-disable no-cond-assign */
   let vid
@@ -38,8 +110,8 @@ function enqueueSong (url, message) {
     message.channel.send('❌ Invalid URL!')
     return
   } else {
-    vid = 'ytsearch:' + url
-    options.push('-f 140')
+    searchYoutube(url, message)
+    return
   }
   message.channel.startTyping()
   const filename = 'cache/' + guid()
