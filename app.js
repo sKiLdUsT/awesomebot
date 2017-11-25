@@ -52,12 +52,12 @@ function enqueueSong (url, message) {
     if (info._duration_raw > maxLength) {
       video.unresolve()
       video = undefined
-      message.channel.send(`❌ Media longer than ${maxLength / 60} minutes! (${info._duration_raw / 60} minutes)`)
+      message.channel.send(`❌ Media longer than ${maxLength / 60} minutes! (${secondsToTimeString(info._duration_raw)})`)
       message.channel.stopTyping()
       return
     }
     info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
-    if (info.description.length > maxLength) {
+    if (info.description.length > 900) {
       info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
     }
     message.channel.send(`✅ Enqueued ${info.fulltitle}!`, {embed: {
