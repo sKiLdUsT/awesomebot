@@ -291,12 +291,12 @@ client.on('ready', () => {
         }
         break
       case 'play':
-        if (args[1] === undefined) message.channel.send('❌ No URL given!')
-        if (cache.guilds[message.guild.id].voiceChannel === undefined) {
+        if (args[1] === undefined) message.channel.send('❌ No URL/search term given!')
+        else if (cache.guilds[message.guild.id].voiceChannel === undefined) {
           message.channel.send(`❌ You must define a voice channel first! (see \`${config.App.commandPrefix}help set\`)`)
-          return
+        } else {
+          enqueueSong(message.content.replace(config.App.commandPrefix + 'play', ''), message)
         }
-        enqueueSong(message.content.replace(config.App.commandPrefix + 'play', ''), message)
         break
       case 'pause':
         if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) message.channel.guild.dispatcher.pause()
