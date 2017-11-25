@@ -324,6 +324,8 @@ client.on('ready', () => {
       case 'vol':
         let maxVolume = cache.guilds[message.channel.guild.id].maxVolume
         if (maxVolume === undefined) maxVolume = 100
+        if (!isNaN(args[1])) parseInt(args[1])
+        else return message.channel.send('❌ Invalid input!')
         cache.guilds[message.channel.guild.id].volume = (args[1] > maxVolume ? maxVolume : args[1]) / 100
         if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) {
           message.channel.guild.dispatcher.setVolume(cache.guilds[message.channel.guild.id].volume)
