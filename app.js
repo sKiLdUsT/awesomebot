@@ -63,9 +63,9 @@ function searchYoutube (search, message) {
                 emoji = '3⃣'
                 break
             }
-            await message.react(emoji)
+            message.react(emoji)
           }
-          await message.react('❌')
+          message.react('❌')
           const collector = message.createReactionCollector(reaction => reaction.me && ['1⃣', '2⃣', '3⃣', '❌'].includes(reaction.emoji.name) && reaction.count > 1, {time: 15000})
           collector
             .on('collect', () => collector.stop())
@@ -74,12 +74,13 @@ function searchYoutube (search, message) {
                 message.delete()
                 return
               }
+              if (collected.first()._emoji.name) {
+                await message.delete()
+                return
+              }
               let newMessage = await message.channel.send('⏳ Loading...')
               await message.delete()
               switch (collected.first()._emoji.name) {
-                case '❌':
-                  message.delete()
-                  break
                 case '1⃣':
                   enqueueSong(urls[0], newMessage)
                   break
