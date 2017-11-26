@@ -24,7 +24,6 @@ function guid () {
 function searchYoutube (search, message) {
   message.edit('⏳ Searching, give me a second...')
   .then(message => {
-    message.channel.startTyping()
     ytdl.getInfo('ytsearch3:' + search, [], (err, info) => {
       if (err) message.edit(`❌ Something went wrong!\n\`\`\`${err}\`\`\``)
       else {
@@ -41,7 +40,6 @@ function searchYoutube (search, message) {
           })
           urls.push('https://youtube.com/watch?v=' + video.display_id)
         })
-        message.channel.stopTyping()
         message.edit('ℹ I found the following videos, choose one.', {embed: {
           fields,
           footer: {
@@ -118,7 +116,6 @@ function enqueueSong (url, message) {
     searchYoutube(url, message)
     return
   }
-  message.channel.startTyping()
   const filename = 'cache/' + guid()
   let videoInfo
   let video = ytdl(vid, options)
@@ -130,7 +127,6 @@ function enqueueSong (url, message) {
       video.unresolve()
       video = undefined
       message.edit(`❌ Media longer than ${maxLength / 60} minutes! (${secondsToTimeString(info._duration_raw)})`)
-      message.channel.stopTyping()
       return
     }
     info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
@@ -161,13 +157,11 @@ function enqueueSong (url, message) {
   .on('end', () => {
     cache.guilds[message.channel.guild.id].songQueue.push({channel: message.channel.id, author: message.author.id, filename, videoInfo})
     if (message.channel.guild.dispatcher === undefined || message.channel.guild.dispatcher.destroyed) player(message.channel.guild.id)
-    message.channel.stopTyping()
   })
   .on('error', e => {
     message.edit('❌ Something went wrong!\n```' + e.stack.replace(__dirname, '') + '```')
     video.unresolve()
     video = undefined
-    message.channel.stopTyping()
   })
   video.pipe(fs.createWriteStream(filename))
 }
