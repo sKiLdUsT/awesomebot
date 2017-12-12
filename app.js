@@ -23,7 +23,7 @@ function guid () {
     s4() + '-' + s4() + s4() + s4()
 }
 
-function searchYoutube (search, message) {
+function searchYoutube (search, message, author) {
   message.edit('⏳ Searching, give me a second...')
   .then(message => {
     ytdl.getInfo('ytsearch3:' + search, [], (err, info) => {
@@ -82,13 +82,13 @@ function searchYoutube (search, message) {
               await message.delete()
               switch (collected.first()._emoji.name) {
                 case '1⃣':
-                  enqueueSong(urls[0], newMessage)
+                  enqueueSong(urls[0], newMessage, author)
                   break
                 case '2⃣':
-                  enqueueSong(urls[1], newMessage)
+                  enqueueSong(urls[1], newMessage, author)
                   break
                 case '3⃣':
-                  enqueueSong(urls[2], newMessage)
+                  enqueueSong(urls[2], newMessage, author)
                   break
               }
             })
@@ -98,7 +98,7 @@ function searchYoutube (search, message) {
   })
 }
 
-function enqueueSong (url, message) {
+function enqueueSong (url, message, messageAuthor) {
   /* eslint-disable no-cond-assign */
   let vid
   let options = []
@@ -115,7 +115,7 @@ function enqueueSong (url, message) {
     message.edit('❌ Invalid URL!')
     return
   } else {
-    searchYoutube(url, message)
+    searchYoutube(url, message, messageAuthor)
     return
   }
   const filename = 'cache/' + guid()
@@ -157,7 +157,7 @@ function enqueueSong (url, message) {
     videoInfo = info
   })
   .on('end', () => {
-    cache.guilds[message.channel.guild.id].songQueue.push({channel: message.channel.id, author: message.author.id, filename, videoInfo})
+    cache.guilds[message.channel.guild.id].songQueue.push({channel: message.channel.id, author: messageAuthor, filename, videoInfo})
     if (message.channel.guild.dispatcher === undefined || message.channel.guild.dispatcher.destroyed) player(message.channel.guild.id)
   })
   .on('error', e => {
@@ -379,7 +379,7 @@ client.on('ready', () => {
         } else {
           let url = message.content.replace(config.App.commandPrefix + 'play', '')
           message.channel.send('⏳ Loading...')
-            .then(message => enqueueSong(url, message))
+            .then(newMessage => enqueueSong(url, newMessage, message.author.id))
         }
         break
       case 'pause':
