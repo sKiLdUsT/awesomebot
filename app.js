@@ -391,8 +391,42 @@ client.on('ready', () => {
         else message.channel.send('❌ Nothing is playing at the moment!')
         break
       case 'skip':
-        if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) message.channel.guild.dispatcher.end()
-        else message.channel.send('❌ Nothing is playing at the moment!')
+        if (message.channel.guild.dispatcher !== undefined && !message.channel.guild.dispatcher.destroyed) {
+          if (cache.guilds[message.channel.guild.id].permissions[message.author.id] !== 0) {
+            message.channel.send('✅ Vote passed, skipping...')
+            message.channel.guild.dispatcher.end()
+            return
+          }
+          let uMessage = message
+          message.channel.send('❓ Skip the current song?')
+           .then(async message => {
+             await message.react('✅')
+             await message.react('❌')
+             const collector = message.createReactionCollector(reaction => reaction.me && ['✅', '❌'].includes(reaction.emoji.name) && reaction.count > 1, {time: 15000})
+             collector
+               .on('collect', reaction => {
+                 let eligibleMembers = client.voiceConnections.find(val => val.channel.guild.id === uMessage.guild.id).channel.members
+                 let voteThreshold = eligibleMembers.size > 0 ? Math.ceil(eligibleMembers.size / 2) : 0
+                 if (reaction.count >= voteThreshold) collector.stop()
+               })
+               .on('end', async collected => {
+                 message.delete()
+                 let eligibleMembers = client.voiceConnections.find(val => val.channel.guild.id === uMessage.guild.id).channel.members
+                 let voteThreshold = eligibleMembers.size > 0 ? Math.ceil(eligibleMembers.size / 2) : 0
+                 if (voteThreshold > 0) {
+                   collected.forEach(val => {
+                     val.users.delete(client.user.id)
+                     val.users.filter(user => eligibleMembers.has(user.id))
+                   })
+                   let winning = collected.sort((a, b) => a.users.size > b.users.size).first()
+                   if (winning.count >= voteThreshold && winning._emoji.name === '✅') {
+                     uMessage.channel.send('✅ Vote passed, skipping...')
+                     message.channel.guild.dispatcher.end()
+                   } else uMessage.channel.send('❌ Vote failed!')
+                 } else uMessage.channel.send('❌ Vote failed!')
+               })
+           })
+        } else message.channel.send('❌ Nothing is playing at the moment!')
         break
       case 'clear':
         if (cache.guilds[message.channel.guild.id].permissions[message.author.id] === 0) {
