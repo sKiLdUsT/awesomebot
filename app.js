@@ -259,8 +259,7 @@ client.on('ready', () => {
       if (cache.guilds[guild.id].songQueue.length > 0) player(guild.id)
       if (cache.guilds[guild.id].lastRev === undefined || cache.guilds[guild.id].lastRev !== revision) {
         let channel = cache.guilds[guild.id].onlyListenIn !== undefined ? guild.channels.get(cache.guilds[guild.id].onlyListenIn) : guild.channels.get(guild.systemChannelID)
-        console.log(cache.guilds[guild.id].lastRev)
-        let changes = String(execSync(`git rev-list ${cache.guilds[guild.id].lastRev !== undefined ? cache.guilds[guild.id].lastRev : '177e116'}...HEAD --pretty=format:"%h %s (%cr)`)).replace(/.+\n(.+(\n|$))/g, '$1')
+        let changes = String(execSync(`git rev-list ${cache.guilds[guild.id].lastRev !== undefined ? cache.guilds[guild.id].lastRev : '177e116'}...HEAD --pretty=format:"%h %s (%cr)"`)).replace(/.+\n(.+(\n|$))/g, '$1')
         channel.send(`ℹ ${pjson.name} just got updated to version ${pjson.version} (Rev ${revision})!\n The following has changed:\n\`\`\`${changes}\`\`\`\n<https://github.com/sKiLdUsT/awesomebot/compare/${cache.guilds[guild.id].lastRev !== undefined ? cache.guilds[guild.id].lastRev : '177e116'}...HEAD>`)
         cache.guilds[guild.id].lastRev = revision
       }
