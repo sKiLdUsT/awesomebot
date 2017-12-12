@@ -8,8 +8,10 @@ const log = require('./lib/log')
 const config = require('./config.json')
 const pjson = require('./package.json')
 const client = new Discord.Client()
+const { execSync } = require('child_process')
+const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
 
-log.info(`${pjson.name} Version ${pjson.version}, loading...`)
+log.info(`${pjson.name} Version ${pjson.version} (${revision}), loading...`)
 
 function guid () {
   function s4 () {
@@ -246,7 +248,8 @@ client.on('ready', () => {
           songQueue: [],
           volume: 0.2,
           maxVolume: 100,
-          maxLength: 900
+          maxLength: 900,
+          lastRev: revision
         }
       }
       Array.from(guild.members.values()).forEach(user => {
@@ -254,6 +257,13 @@ client.on('ready', () => {
         if (cache.guilds[guild.id].permissions[user.id] === undefined) cache.guilds[guild.id].permissions[user.id] = 0
       })
       if (cache.guilds[guild.id].songQueue.length > 0) player(guild.id)
+      if (cache.guilds[guild.id].lastRev === undefined || cache.guilds[guild.id].lastRev !== revision) {
+        let channel = cache.guilds[guild.id].onlyListenIn !== undefined ? guild.channels.get(cache.guilds[guild.id].onlyListenIn) : guild.channels.get(guild.systemChannelID)
+        console.log(cache.guilds[guild.id].lastRev)
+        let changes = String(execSync(`git rev-list ${cache.guilds[guild.id].lastRev !== undefined ? cache.guilds[guild.id].lastRev : '177e116'}...HEAD --pretty=format:"%h %s (%cr)`)).replace(/.+\n(.+(\n|$))/g, '$1')
+        channel.send(`ℹ ${pjson.name} just got updated to version ${pjson.version} (Rev ${revision})!\n The following has changed:\n\`\`\`${changes}\`\`\`\n<https://github.com/sKiLdUsT/awesomebot/compare/${cache.guilds[guild.id].lastRev !== undefined ? cache.guilds[guild.id].lastRev : '177e116'}...HEAD>`)
+        cache.guilds[guild.id].lastRev = revision
+      }
     })
   }
   log.info('Ready!')
@@ -269,7 +279,8 @@ client.on('ready', () => {
       songQueue: [],
       volume: 0.2,
       maxVolume: 100,
-      maxLength: 900
+      maxLength: 900,
+      lastRev: revision
     }
     Array.from(guild.members.values()).forEach(user => {
       if (user.id === client.user.id) return
