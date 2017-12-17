@@ -1,6 +1,6 @@
 # Command Help
 
-### help
+### help [core]
 *Available to all permissions*
 Shows this help message
 **Example**
@@ -8,7 +8,7 @@ Shows this help message
 /help
 ```
 ---
-### ping
+### ping [debug]
 *Available to all permissions*
 Pong!
 **Example**
@@ -16,32 +16,46 @@ Pong!
 /ping
 ```
 ---
-### grant (userId, permission)
-*Available to permission "admin" only*
-Grant someone a specific permission of either
-- *moderator*
-- *admin*
-
+### grant (@User, permission) [core]
+*Available to permission "core.admin" only*
+Grant someone a specific permission in the form of *module*.*permission*
 **Example**
 ```
-/grant 122143660027412480 admin
+/grant @sKiL#6093 core.admin
 ```
 ---
-### revoke (userId, permission)
-*Available to permission "admin" only*
-Revoke someone's permissions
+### revoke (@User, permission) [core]
+*Available to permission "core.admin" only*
+Revoke someone's permission
 **Example**
 ```
-/revoke 122143660027412480
+/revoke @sKiL#6093 core.admin
 ```
 ---
-### set (key, value)
-*Available to permission "admin" only*
+### addModule (userId, permission) [core]
+*Available to permission "core.admin" only*
+Add a module to the server
+**Example**
+```
+More details soon...
+```
+---
+### removeModule (userId, permission) [core]
+*Available to permission "core.admin" only*
+Remove a module from the server
+**Example**
+```
+More details soon...
+```
+---
+### set (key, value) [core]
+*Available to permission "core.admin" only*
 Assign a specific value to a key, which may be one of the following:
 - *voiceChannel* - Set the default voice channel to connect to
 - *onlyListenIn* - Set the channel to accept commands from exclusively
 - *maxVolume* - Set the max volume allowed to be used
 - *maxLength* - Set the max media length allowed. Capped to 1 hour to prevent cluttering cache with long videos
+- *listLimit* - Set the max count of videos to process from playlists. Capped to 50 to prevent cluttering cache with too much videos
 
 **Example**
 ```
@@ -49,12 +63,13 @@ Assign a specific value to a key, which may be one of the following:
 /set onlyListenIn 369768568931221506
 /set maxVolume 100
 /set maxLength 900
+/set listLimit 10
 ```
 ---
-### play (subject)
-*Available to all permissions*
+### play (subject) [media]
+*Available to media.dj, core.moderator and core.admin*
 Play something according to the subject of either
-- *YouTube Link*
+- *YouTube Link/Playlist*
 - *Soundcloud Link*
 - *Generic search term to be looked up on YouTube*
 
@@ -65,39 +80,39 @@ Play something according to the subject of either
 /play never gonna give you up
 ```
 ---
-### pause
-*Available to all permissions*
+### pause [media]
+*Available to media.dj, core.moderator and core.admin*
 Pause playback of  current song
 **Example**
 ```
 /pause
 ```
 ---
-### resume
-*Available to all permissions*
+### resume [media]
+*Available to media.dj, core.moderator and core.admin*
 Resume playback of  current song
 **Example**
 ```
 /resume
 ```
 ---
-### skip
-*Available to all permissions, requires vote under permission "moderator"*
+### skip [media]
+*Available to all permissions, requires vote under permission "core.moderator"*
 Skip playback of  current song
 **Example**
 ```
 /skip
 ```
 ---
-### clear
-*Available to all permissions, requires vote under permission "moderator"*
+### clear [media]
+*Available to all permissions, requires vote under permission "core.moderator"*
 Clear the playlist
 **Example**
 ```
 /clear
 ```
 ---
-### vol
+### vol [media]
 *Available to all permissions*
 Sets current playback volume, defaults to 20. Limited to **100**
 **Example**
@@ -105,7 +120,7 @@ Sets current playback volume, defaults to 20. Limited to **100**
 /vol 30
 ```
 ---
-### queue
+### queue [media]
 *Available to all permissions*
 Shows current playlist.
 **Example**
@@ -114,7 +129,7 @@ Shows current playlist.
 ```
 ---
 ---
-### np
+### np [media]
 *Available to all permissions*
 Shows currently playing song.
 **Example**
