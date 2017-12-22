@@ -2,7 +2,8 @@
 const config = require('../config.json')
 const rimraf = require('rimraf').sync
 const fs = require('fs')
-const ytdl = require('youtube-dl')
+const ytdl = require('ytdl-core')
+const request = require('request')
 const tools = require('../lib/tools.js')
 const log = require('../lib/log.js')
 let init = false
@@ -46,14 +47,12 @@ module.exports = class {
   async _parseURL (url, message, authorId) {
     /* eslint-disable no-cond-assign */
     let vid
-    let options = []
     if (vid = url.match(/(?:http:\/\/|https:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=([^#&?]*).*|youtu\.be\/([^#&?]*).*)/)) {
       vid = 'https://youtube.com/watch?v=' + vid[1]
-      options.push('-f 140')
       try {
-        let info = await this._enqueueSong(vid, options, {channel: message.channel.id, author: authorId})
-        message.edit(`✔ Enqueued ${info.fulltitle}!`, {embed: {
-          title: info.fulltitle,
+        let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
+        message.edit(`✔ Enqueued ${info.title}!`, {embed: {
+          title: info.title,
           fields: [{
             name: 'Description',
             value: info.description.length === 0 ? 'No description provided' : info.description
@@ -62,13 +61,13 @@ module.exports = class {
             name: 'Youtube'
           },
           thumbnail: {
-            url: info.thumbnail
+            url: info.iurlmaxres
           },
           footer: {
-            text: info.uploader
+            text: info.author.name
           },
-          timestamp: new Date(info.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')),
-          url: info.webpage_url,
+          timestamp: new Date(info.published),
+          url: 'https://youtube.com/watch?v=' + info.video_id,
           color: 0xff0000
         }})
       } catch (e) {
@@ -76,7 +75,6 @@ module.exports = class {
       }
     } else if (vid = url.match(/(?:http:\/\/|https:\/\/)?(?:www\.)?(?:youtube\.com\/playlist\?list=([^#&?]*).*)/)) {
       vid = 'https://youtube.com/playlist?list=' + vid[1]
-      options.push('-f 140')
       let videos = await new Promise((resolve, reject) => {
         ytdl.exec(vid, ['-j', '-s', '--flat-playlist'], {}, (err, output) => {
           if (err) reject(err)
@@ -87,13 +85,12 @@ module.exports = class {
         message = await message.edit(`⏳ Playlist video count exceeds limit, enqueueing **${this.instance.settings.listLimit}/${videos.length}** videos...`)
         videos = videos.slice(0, this.instance.settings.listLimit)
       } else message = await message.edit(`⏳ Enqueueing **${videos.length}** videos...`)
-      options.push('-f 140')
       for (let i = 0; i < videos.length; i++) {
         let video = JSON.parse(videos[i])
         try {
-          let info = await this._enqueueSong('https://youtube.com/watch?v=' + video.id, options, {channel: message.channel.id, author: authorId})
-          message.channel.send(`✔ Enqueued ${info.fulltitle}! (${(i + 1)}/${videos.length})`, {embed: {
-            title: info.fulltitle,
+          let info = await this._enqueueSong('https://youtube.com/watch?v=' + video.id, {channel: message.channel.id, author: authorId})
+          message.edit(`✔ Enqueued ${info.title}!`, {embed: {
+            title: info.title,
             fields: [{
               name: 'Description',
               value: info.description.length === 0 ? 'No description provided' : info.description
@@ -102,13 +99,13 @@ module.exports = class {
               name: 'Youtube'
             },
             thumbnail: {
-              url: info.thumbnail
+              url: info.iurlmaxres
             },
             footer: {
-              text: info.uploader
+              text: info.author.name
             },
-            timestamp: new Date(info.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')),
-            url: info.webpage_url,
+            timestamp: new Date(info.published),
+            url: 'https://youtube.com/watch?v=' + info.video_id,
             color: 0xff0000
           }})
         } catch (e) {
@@ -119,25 +116,25 @@ module.exports = class {
     } else if (vid = url.match(/(?:http:\/\/|https:\/\/)(?:www\.)?soundcloud\.com\/(\w+)\/((?!sets).+)/)) {
       vid = `https://soundcloud.com/${vid[1]}/${vid[2]}`
       try {
-        let info = await this._enqueueSong(vid, options, {channel: message.channel.id, author: authorId})
-        message.edit(`✔ Enqueued ${info.fulltitle}!`, {embed: {
-          title: info.fulltitle,
+        let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
+        message.edit(`✔ Enqueued ${info.title}!`, {embed: {
+          title: info.title,
           fields: [{
             name: 'Description',
             value: info.description.length === 0 ? 'No description provided' : info.description
           }],
           author: {
-            name: 'Soundcloud'
+            name: 'Youtube'
           },
           thumbnail: {
-            url: info.thumbnail
+            url: info.iurlmaxres
           },
           footer: {
-            text: info.uploader
+            text: info.author.name
           },
-          timestamp: new Date(info.upload_date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')),
-          url: info.webpage_url,
-          color: 0xff7700
+          timestamp: new Date(info.published),
+          url: 'https://youtube.com/watch?v=' + info.video_id,
+          color: 0xff0000
         }})
       } catch (e) {
         message.edit('✖ ' + e.message)
@@ -145,13 +142,36 @@ module.exports = class {
     } else if (url.match(/(?:\w+:\/\/).+/)) {
       message.edit('✖ Invalid URL!')
     } else {
-      let searchData = await this._searchYoutube(url, message, authorId)
-      vid = searchData.url
-      message = searchData.message
       try {
-        await this._enqueueSong(vid, options, {channel: message.channel.id, author: authorId})
-      } catch (e) {
-        message.edit('✖ ' + e.message)
+        let searchData = await this._searchYoutube(url, message, authorId)
+        vid = searchData.url
+        message = searchData.message
+        try {
+          let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
+          message.edit(`✔ Enqueued ${info.title}!`, {embed: {
+            title: info.title,
+            fields: [{
+              name: 'Description',
+              value: info.description.length === 0 ? 'No description provided' : info.description
+            }],
+            author: {
+              name: 'Youtube'
+            },
+            thumbnail: {
+              url: info.iurlmaxres
+            },
+            footer: {
+              text: info.author.name
+            },
+            timestamp: new Date(info.published),
+            url: 'https://youtube.com/watch?v=' + info.video_id,
+            color: 0xff0000
+          }})
+        } catch (e) {
+          message.edit('✖ ' + e.message)
+        }
+      } catch (err) {
+        message.edit(`✖ Something went wrong!\n\`\`\`${err.stack.replace(__dirname, '')}\`\`\``)
       }
     }
   }
@@ -159,9 +179,19 @@ module.exports = class {
     return new Promise((resolve, reject) => {
       message.edit('⏳ Searching, give me a second...')
       .then(message => {
-        ytdl.getInfo(`ytsearch3:"${search}"`, [], (err, info) => {
-          if (err) message.edit(`✖ Something went wrong!\n\`\`\`${err}\`\`\``)
+        request.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(search)}&sp=EgIQAQ%253D%253D&pbj=1`, async (err, res, body) => {
+          if (err) reject(err)
+          else if (res.statusCode !== 200) reject(new Error('Request failed with non-200 code'))
           else {
+            let ids = tools.getMatches(body, /href="\/watch\?v=([^#&?]{11})" class=" yt-uix-sessionlink/g).slice(0, 3)
+            let info = []
+            for (let i = 0; i < ids.length; i++) {
+              try {
+                info.push(await ytdl.getInfo(ids[i]))
+              } catch (e) {
+                console.error(e)
+              }
+            }
             let fields = []
             let urls = []
             info.forEach((video, index) => {
@@ -170,10 +200,10 @@ module.exports = class {
                 video.description = video.description.replace(/^([^]{128}[^\s]*)?([^]+)/, '$1 ...')
               }
               fields.push({
-                name: `${index + 1}. ${video.fulltitle} [${video.uploader}]`,
+                name: `${index + 1}. ${video.title} [${video.author.name}]`,
                 value: video.description.length === 0 ? 'No description provided' : video.description
               })
-              urls.push('https://youtube.com/watch?v=' + video.display_id)
+              urls.push('https://youtube.com/watch?v=' + video.video_id)
             })
             message.edit('ℹ I found the following videos, choose one.', {embed: {
               fields,
@@ -203,14 +233,13 @@ module.exports = class {
               collector
                 .on('collect', () => collector.stop())
                 .on('end', async collected => {
-                  /* eslint-disable prefer-promise-reject-errors */
                   if (collected === undefined) {
                     message.delete()
                     return
                   }
                   if (collected.first()._emoji.name === '✖') {
                     await message.delete()
-                    reject()
+                    return
                   }
                   let newMessage = await message.channel.send('⏳ Loading...')
                   await message.delete()
@@ -232,18 +261,18 @@ module.exports = class {
       })
     })
   }
-  _enqueueSong (url, options, qOptions) {
+  _enqueueSong (url, qOptions) {
     return new Promise((resolve, reject) => {
       const filename = './cache/' + tools.guid() + '.tmp'
-      let video = ytdl(url, options)
+      let video = ytdl(url, {quality: 'highest', filter: 'audioonly'})
       let videoInfo
       video
         .on('info', info => {
           let maxLength = this.instance.settings.maxLength
-          if (info._duration_raw > maxLength) {
-            video.unresolve()
+          if (info.length_seconds > maxLength) {
+            video.destroy()
             video = undefined
-            return reject(new RangeError(`Media longer than ${maxLength / 60} minutes! (${tools.secondsToTimeString(info._duration_raw)})`))
+            return reject(new RangeError(`Media longer than ${maxLength / 60} minutes! (${tools.secondsToTimeString(info.length_seconds)})`))
           }
           info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
           if (info.description.length > 900) {
@@ -258,11 +287,11 @@ module.exports = class {
           this._saveQueue()
         })
         .on('error', e => {
-          video.unresolve()
+          video.destroy()
           video = undefined
-          reject(new Error('Something went wrong!\n```' + e.stack.replace(__dirname, '') + '```'))
+          reject(e)
         })
-      video.pipe(fs.createWriteStream(filename))
+        .pipe(fs.createWriteStream(filename))
     })
   }
   _player () {
@@ -274,15 +303,15 @@ module.exports = class {
         this.dispatcher = connection.playFile(song.filename)
         this.dispatcher.setVolume(this.instance.settings.volume)
         this.dispatcher.setBitrate(128)
-        this.dispatcher.duration = song.videoInfo._duration_raw
-        this.dispatcher.song = song.videoInfo.fulltitle
+        this.dispatcher.duration = song.videoInfo.length_seconds
+        this.dispatcher.song = song.videoInfo.title
         this.dispatcher.url = song.url
         this.dispatcher
           .on('end', () => {
-            setTimeout(() => fs.unlink(song.filename), 5000)
+            setTimeout(() => fs.unlink(song.filename, () => {}), 5000)
             this._player()
           })
-        this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.videoInfo.fulltitle}" is now playing in ${connection.channel.name}!`)
+        this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.videoInfo.title}" is now playing in ${connection.channel.name}!`)
         this._saveQueue()
       } catch (e) {
         this.playing = false
@@ -454,10 +483,10 @@ module.exports = class {
         song.description = song.description.replace(/^([^]{120}[^\s]*)?([^]+)/, '$1 ...')
       }
       fields.push({
-        name: `${index + 1} - "${song.fulltitle}"`,
-        value: `Duration: ${tools.secondsToTimeString(song._duration_raw)}`
+        name: `${index + 1} - "${song.title}"`,
+        value: `Duration: ${tools.secondsToTimeString(song.length_seconds)}`
       })
-      duration = duration + song._duration_raw
+      duration = duration + parseInt(song.length_seconds)
     })
     let untilNext = this.modules.media.dispatcher.duration - Math.floor((new Date() - this.modules.media.dispatcher.player.streamingData.startTime) / 1000)
     fields.push({

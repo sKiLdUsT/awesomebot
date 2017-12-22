@@ -68,15 +68,13 @@ Assign a specific value to a key, which may be one of the following:
 ---
 ### play (subject) [media]
 *Available to media.dj, core.moderator and core.admin*
-Play something according to the subject of either
+Play something off YouTube according to the subject of either
 - *YouTube Link/Playlist*
-- *Soundcloud Link*
 - *Generic search term to be looked up on YouTube*
 
 **Example**
 ```
 /play https://www.youtube.com/watch?v=DLzxrzFCyOs
-/play https://soundcloud.com/rick-astley-official/never-gonna-give-you-up
 /play never gonna give you up
 ```
 ---
