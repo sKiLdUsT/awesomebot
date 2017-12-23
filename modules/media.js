@@ -76,9 +76,13 @@ module.exports = class {
     } else if (vid = url.match(/(?:http:\/\/|https:\/\/)?(?:www\.)?(?:youtube\.com\/playlist\?list=([^#&?]*).*)/)) {
       vid = 'https://youtube.com/playlist?list=' + vid[1]
       let videos = await new Promise((resolve, reject) => {
-        ytdl.exec(vid, ['-j', '-s', '--flat-playlist'], {}, (err, output) => {
+        request.get(vid, async (err, res, body) => {
+          /* eslint-disable no-regex-spaces */
           if (err) reject(err)
-          resolve(output)
+          else if (res.statusCode !== 200) reject(new Error('Request failed with non-200 code'))
+          else {
+            resolve(tools.getMatches(body, /<a class="pl-video-title-link yt-uix-tile-link yt-uix-sessionlink  spf-link " dir="ltr" href="\/watch\?v=([^#&?]{11})/g))
+          }
         })
       })
       if (videos.length > this.instance.settings.listLimit) {
@@ -86,10 +90,9 @@ module.exports = class {
         videos = videos.slice(0, this.instance.settings.listLimit)
       } else message = await message.edit(`⏳ Enqueueing **${videos.length}** videos...`)
       for (let i = 0; i < videos.length; i++) {
-        let video = JSON.parse(videos[i])
         try {
-          let info = await this._enqueueSong('https://youtube.com/watch?v=' + video.id, {channel: message.channel.id, author: authorId})
-          message.edit(`✔ Enqueued ${info.title}!`, {embed: {
+          let info = await this._enqueueSong('https://youtube.com/watch?v=' + videos[i], {channel: message.channel.id, author: authorId})
+          message.channel.send(`✔ Enqueued ${info.title}!`, {embed: {
             title: info.title,
             fields: [{
               name: 'Description',
