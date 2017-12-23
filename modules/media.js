@@ -10,13 +10,7 @@ let init = false
 
 module.exports = class {
   constructor (instance) {
-    this.permissions = ['dj']
-    this.playing = false
-    this.playqueue = []
-    this.dispatcher = false
-    this.instance = instance
-    if (!init) {
-      init = true
+    function cleanup () {
       let files = fs.readdirSync('./cache')
       let tempfiles = files.filter(file => (/\.(tmp)$/i).test(file))
       let indexes = files.filter(file => (/\.(media\.json)$/i).test(file))
@@ -34,6 +28,16 @@ module.exports = class {
         log.debug('Deleting ' + file)
         rimraf('./cache/' + file)
       })
+    }
+    this.permissions = ['dj']
+    this.playing = false
+    this.playqueue = []
+    this.dispatcher = false
+    this.instance = instance
+    if (!init) {
+      init = true
+      cleanup()
+      setInterval(cleanup, 120000)
     }
     if (fs.existsSync(`./cache/${this.instance.guild.id}.media.json`)) this.playqueue = JSON.parse(String(fs.readFileSync(`./cache/${this.instance.guild.id}.media.json`)))
     if (this.playqueue.length > 0) this._player()
@@ -301,7 +305,7 @@ module.exports = class {
     function play (connection) {
       this.playing = true
       try {
-        let song = this.playqueue.shift()
+        let song = this.playqueue.slice(0, 1)[0]
         if (this.dispatcher !== false) this.dispatcher.end()
         this.dispatcher = connection.playFile(song.filename)
         this.dispatcher.setVolume(this.instance.settings.volume)
@@ -311,6 +315,7 @@ module.exports = class {
         this.dispatcher.url = song.url
         this.dispatcher
           .on('end', () => {
+            this.playqueue.shift()
             setTimeout(() => fs.unlink(song.filename, () => {}), 5000)
             this._player()
           })
