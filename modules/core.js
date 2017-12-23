@@ -31,7 +31,7 @@ module.exports = class {
       message.channel.send('✖ Missing value(s)!')
       return false
     }
-    args[1] = args[1].replace(/<@([0-9]*)>/, '$1')
+    args[1] = args[1].replace(/<@(?:!)?([0-9]*)>/, '$1')
     args[2] = String(args[2])
     if (!message.channel.guild.members.has(args[1])) {
       message.channel.send('✖ User is not member of this server!')
