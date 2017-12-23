@@ -99,7 +99,6 @@ module.exports = class {
     this.modules[args[1]] = new (require(`../modules/${args[1]}.js`))(this)
     this._attachModule(this.modules[args[1]])
     message.channel.send(`✔ Added module **${args[1]}**`)
-    console.log(this.modules)
     return true
   }
   removeModule (args, message) {
@@ -124,7 +123,6 @@ module.exports = class {
     this.settings.modules = modules.filter(e => e !== args[1])
     this._removeModule(args[1])
     message.channel.send(`✔ Removed module **${args[1]}**`)
-    console.log(this.modules)
     return true
   }
   set (args, message) {

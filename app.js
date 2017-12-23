@@ -1,7 +1,9 @@
 'use strict'
+global.__basedir = __dirname
 const Discord = require('discord.js')
 const client = new Discord.Client()
 const { execSync } = require('child_process')
+const fs = require('fs')
 const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
 const log = require('./lib/log')
 const pjson = require('./package.json')
@@ -13,11 +15,27 @@ let bot = new Map()
 log.info(`${pjson.name} Version ${pjson.version} (${revision}), loading...`)
 
 function selfCleanup (e) {
-  if (e) console.error(e)
-  else log.warn('Caught interrupt signal, cleaning...')
-  client.destroy().then(() => {
-    process.exit()
-  })
+  if (e) {
+    log.error(e)
+    fs.writeFileSync('dirtyexit', JSON.stringify({
+      error: e.toString(),
+      timestamp: Date.now()
+    }))
+    client.fetchUser(config.Discord.adminId).then(user => {
+      user.createDM().then(channel => {
+        channel.send(`✖ Critical Error occured\n\`\`\`[${log.date()}] ${e.stack}\`\`\``).then(() => {
+          client.destroy().then(() => {
+            process.exit()
+          })
+        })
+      })
+    })
+  } else {
+    log.warn('Caught interrupt signal, cleaning...')
+    client.destroy().then(() => {
+      process.exit()
+    })
+  }
 }
 
 process
@@ -67,7 +85,7 @@ client
       try {
         bot.get(message.channel.guild.id)[args[0]](args, message)
       } catch (e) {
-        if (e.toString() !== 'TypeError: bot.get(...)[args[0]] is not a function') message.channel.send(`✖ An internal error occured.\n\`\`\`${e.stack.replace(__dirname, '')}\`\`\``)
+        if (e.toString() !== 'TypeError: bot.get(...)[args[0]] is not a function') message.channel.send(`✖ An internal error occured.\n\`\`\`${e.stack.split(global.__basedir).join('')}\`\`\``)
         else message.channel.send(`✖ Unknown command! (see \`${config.App.commandPrefix}help\`)`)
       }
     }

@@ -178,7 +178,7 @@ module.exports = class {
           message.edit('✖ ' + e.message)
         }
       } catch (err) {
-        message.edit(`✖ Something went wrong!\n\`\`\`${err.stack.replace(__dirname, '')}\`\`\``)
+        message.edit(`✖ Something went wrong!\n\`\`\`${err.stack.split(global.__basedir).join('')}\`\`\``)
       }
     }
   }
