@@ -12,13 +12,18 @@
 	],
 	"main": "app.js",
 	"dependencies": {
-		"better-sqlite3": "^4.0.3",
+		"better-sqlite3": "^4.1.0",
 		"colors": "^1.1.2",
-		"discord.js": "^11.2.1",
-		"ffmpeg-binaries": "^3.2.2-3",
+		"discord.js": "^11.3.0",
+		"esprima": "^4.0.0",
+		"ffmpeg-binaries": "^3.2.2",
 		"node-gyp": "^3.6.2",
 		"node-opus": "^0.2.7",
-		"opn": "^5.1.0",
-		"ytdl-core": "^0.18.5"
+		"opn": "^5.2.0",
+		"snekfetch": "^3.6.1",
+		"superagent": "^3.8.2",
+		"tar.gz": "^1.0.7",
+		"ws": "^3.3.3",
+		"ytdl-core": "^0.18.7"
 	}
 }
