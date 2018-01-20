@@ -51,10 +51,11 @@ module.exports = class {
   async _parseURL (url, message, authorId) {
     /* eslint-disable no-cond-assign */
     let vid
+    let info
     if (vid = url.match(/(?:http:\/\/|https:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=([^#&?]*).*|youtu\.be\/([^#&?]*).*)/)) {
       vid = 'https://youtube.com/watch?v=' + vid[1]
       try {
-        let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
+        info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId}, message)
         message.edit(`✔ Enqueued ${info.title}!`, {embed: {
           title: info.title,
           fields: [{
@@ -95,85 +96,28 @@ module.exports = class {
       } else message = await message.edit(`⏳ Enqueueing **${videos.length}** videos...`)
       for (let i = 0; i < videos.length; i++) {
         try {
-          let info = await this._enqueueSong('https://youtube.com/watch?v=' + videos[i], {channel: message.channel.id, author: authorId})
-          message.channel.send(`✔ Enqueued ${info.title}!`, {embed: {
-            title: info.title,
-            fields: [{
-              name: 'Description',
-              value: info.description.length === 0 ? 'No description provided' : info.description
-            }],
-            author: {
-              name: 'Youtube'
-            },
-            thumbnail: {
-              url: info.iurlmaxres
-            },
-            footer: {
-              text: info.author.name
-            },
-            timestamp: new Date(info.published),
-            url: 'https://youtube.com/watch?v=' + info.video_id,
-            color: 0xff0000
-          }})
+          info = await this._enqueueSong('https://youtube.com/watch?v=' + videos[i], {channel: message.channel.id, author: authorId}, message)
         } catch (e) {
           message.edit('✖ ' + e.message)
         }
       }
-      message.delete()
     } else if (vid = url.match(/(?:http:\/\/|https:\/\/)(?:www\.)?soundcloud\.com\/(\w+)\/((?!sets).+)/)) {
       vid = `https://soundcloud.com/${vid[1]}/${vid[2]}`
       try {
-        let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
-        message.edit(`✔ Enqueued ${info.title}!`, {embed: {
-          title: info.title,
-          fields: [{
-            name: 'Description',
-            value: info.description.length === 0 ? 'No description provided' : info.description
-          }],
-          author: {
-            name: 'Youtube'
-          },
-          thumbnail: {
-            url: info.iurlmaxres
-          },
-          footer: {
-            text: info.author.name
-          },
-          timestamp: new Date(info.published),
-          url: 'https://youtube.com/watch?v=' + info.video_id,
-          color: 0xff0000
-        }})
+        info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId}, message)
       } catch (e) {
         message.edit('✖ ' + e.message)
       }
     } else if (url.match(/(?:\w+:\/\/).+/)) {
       message.edit('✖ Invalid URL!')
+      return
     } else {
       try {
         let searchData = await this._searchYoutube(url, message, authorId)
         vid = searchData.url
         message = searchData.message
         try {
-          let info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId})
-          message.edit(`✔ Enqueued ${info.title}!`, {embed: {
-            title: info.title,
-            fields: [{
-              name: 'Description',
-              value: info.description.length === 0 ? 'No description provided' : info.description
-            }],
-            author: {
-              name: 'Youtube'
-            },
-            thumbnail: {
-              url: info.iurlmaxres
-            },
-            footer: {
-              text: info.author.name
-            },
-            timestamp: new Date(info.published),
-            url: 'https://youtube.com/watch?v=' + info.video_id,
-            color: 0xff0000
-          }})
+          info = await this._enqueueSong(vid, {channel: message.channel.id, author: authorId}, message)
         } catch (e) {
           message.edit('✖ ' + e.message)
         }
@@ -181,6 +125,26 @@ module.exports = class {
         message.edit(`✖ Something went wrong!\n\`\`\`${err.stack.split(global.__basedir).join('')}\`\`\``)
       }
     }
+    message.channel.send(`✔ Enqueued ${info.title}!`, {embed: {
+      title: info.title,
+      fields: [{
+        name: 'Description',
+        value: info.description.length === 0 ? 'No description provided' : info.description
+      }],
+      author: {
+        name: 'Youtube'
+      },
+      thumbnail: {
+        url: info.iurlmaxres
+      },
+      footer: {
+        text: info.author.name
+      },
+      timestamp: new Date(info.published),
+      url: 'https://youtube.com/watch?v=' + info.video_id,
+      color: 0xff0000
+    }})
+    message.delete()
   }
   _searchYoutube (search, message, authorId) {
     return new Promise((resolve, reject) => {
@@ -268,13 +232,13 @@ module.exports = class {
       })
     })
   }
-  _enqueueSong (url, qOptions) {
+  _enqueueSong (url, qOptions, message) {
     return new Promise((resolve, reject) => {
       const filename = './cache/' + tools.guid() + '.media.tmp'
       let video = ytdl(url, {quality: 'highest', filter: 'audioonly'})
-      let videoInfo
+      let pTimeout
       video
-        .on('info', info => {
+        .on('info', async info => {
           let maxLength = this.instance.settings.maxLength
           if (info.length_seconds > maxLength) {
             video.destroy()
@@ -285,13 +249,27 @@ module.exports = class {
           if (info.description.length > 900) {
             info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
           }
-          videoInfo = info
-          return resolve(info)
+          this.playqueue.push({channel: qOptions.channel, author: qOptions.author, filename, info, url, pending: true})
+          this._saveQueue()
+        })
+        .on('progress', (chunk, dl, dtotal) => {
+          if (pTimeout) clearTimeout(pTimeout)
+          pTimeout = setTimeout(() => {
+            let progress = Math.floor((dl / dtotal) * 100)
+            let before = '='.repeat(progress < 50 ? Math.floor((progress / 100 * 2) * 11) : 11)
+            let after = '='.repeat(progress > 50 ? Math.floor((progress / 100 / 2) * 11) : 0)
+            before = before + '   '.repeat(11 - before.length)
+            after = after + '   '.repeat(11 - after.length)
+            message.edit(`⏳ Downloading...\n[${before}${progress}%${after}]`)
+          }, 1000)
         })
         .on('end', () => {
-          this.playqueue.push({channel: qOptions.channel, author: qOptions.author, filename, videoInfo, url})
+          if (pTimeout) clearTimeout(pTimeout)
+          let video = this.playqueue.find(el => el.filename === filename)
+          video.pending = false
           if (!this.playing) this._player()
           this._saveQueue()
+          return resolve(video.info)
         })
         .on('error', e => {
           video.destroy()
@@ -302,16 +280,15 @@ module.exports = class {
     })
   }
   _player () {
-    function play (connection) {
+    function play (connection, song) {
       this.playing = true
       try {
-        let song = this.playqueue.slice(0, 1)[0]
         if (this.dispatcher !== false) this.dispatcher.end()
         this.dispatcher = connection.playFile(song.filename)
         this.dispatcher.setVolume(this.instance.settings.volume)
         this.dispatcher.setBitrate(128)
-        this.dispatcher.duration = song.videoInfo.length_seconds
-        this.dispatcher.song = song.videoInfo.title
+        this.dispatcher.duration = song.info.length_seconds
+        this.dispatcher.song = song.info.title
         this.dispatcher.url = song.url
         this.dispatcher
           .on('end', () => {
@@ -319,25 +296,27 @@ module.exports = class {
             setTimeout(() => fs.unlink(song.filename, () => {}), 5000)
             this._player()
           })
-        this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.videoInfo.title}" is now playing in ${connection.channel.name}!`)
+        this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.info.title}" is now playing in ${connection.channel.name}!`)
         this._saveQueue()
       } catch (e) {
         this.playing = false
         throw e
       }
     }
-    if (this.playqueue.length > 0) {
+    let queue = this.playqueue.filter(e => !e.pending)
+    if (queue.length > 0) {
+      let song = queue.slice(0, 1)[0]
       if (this.instance.guild.voiceConnection) {
-        play.call(this, this.instance.guild.voiceConnection)
+        play.call(this, this.instance.guild.voiceConnection, song)
       } else {
         let self = this
         this.instance.guild.channels.get(this.instance.settings.voiceChannel).join()
-        .then(newConn => { play.call(self, newConn) })
+        .then(newConn => { play.call(self, newConn, song) })
       }
     } else {
       this.dispatcher = false
       this.playing = false
-      this.instance.guild.voiceConnection.disconnect()
+      if (this.instance.guild.voiceConnection) this.instance.guild.voiceConnection.disconnect()
     }
   }
   play (args, message) {
@@ -485,7 +464,7 @@ module.exports = class {
     let fields = []
     let duration = 0
     this.modules.media.playqueue.forEach((song, index) => {
-      song = song.videoInfo
+      song = song.info
       song.description = song.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
       if (song.description.length > 120) {
         song.description = song.description.replace(/^([^]{120}[^\s]*)?([^]+)/, '$1 ...')
