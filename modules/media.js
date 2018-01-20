@@ -12,7 +12,7 @@ module.exports = class {
   constructor (instance) {
     function cleanup () {
       let files = fs.readdirSync('./cache')
-      let tempfiles = files.filter(file => (/\.(tmp)$/i).test(file))
+      let tempfiles = files.filter(file => (/\.(media\.tmp)$/i).test(file))
       let indexes = files.filter(file => (/\.(media\.json)$/i).test(file))
       indexes.forEach(index => {
         let filename = index
@@ -270,7 +270,7 @@ module.exports = class {
   }
   _enqueueSong (url, qOptions) {
     return new Promise((resolve, reject) => {
-      const filename = './cache/' + tools.guid() + '.tmp'
+      const filename = './cache/' + tools.guid() + '.media.tmp'
       let video = ytdl(url, {quality: 'highest', filter: 'audioonly'})
       let videoInfo
       video
