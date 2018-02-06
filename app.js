@@ -90,4 +90,17 @@ client
       }
     }
   })
+  .on('error', e => {
+    client.fetchUser(config.Discord.adminId).then(user => {
+      user.createDM().then(channel => {
+        channel.send(`✖ Error occured\n\`\`\`[${log.date()}] ${e.stack}\`\`\``).then(() => {
+          // Gracefully exit the bot (and let it restart by external logic if needed) for now
+          // since I don't know the origin of such errors yet
+          client.destroy().then(() => {
+            selfCleanup()
+          })
+        })
+      })
+    })
+  })
   .login(config.Discord.token)
