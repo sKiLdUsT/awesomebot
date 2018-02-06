@@ -2,7 +2,7 @@
 	"name": "Awesomebot",
 	"description": "An awesome bot for Discord",
 	"author": "sKiL <skil@skildust.com> (https://skildust.com)",
-	"version": "0.6.2-20180120",
+	"version": "0.6.2-20180206",
 	"repository": "https://git.skildust.com/sKiL/awesomebot",
 	"license": "MIT",
 	"keywords": [
