@@ -17,12 +17,14 @@
 		"discord.js": "^11.3.0",
 		"esprima": "^4.0.0",
 		"ffmpeg-binaries": "^3.2.2",
+		"md5": "^2.2.1",
 		"node-gyp": "^3.6.2",
 		"node-opus": "^0.2.7",
 		"opn": "^5.2.0",
-		"snekfetch": "^3.6.1",
+		"snekfetch": "^3.6.4",
 		"superagent": "^3.8.2",
 		"tar.gz": "^1.0.7",
+		"uglify-es": "github:mishoo/UglifyJS2#harmony",
 		"ws": "^3.3.3",
 		"ytdl-core": "^0.18.7"
 	}
