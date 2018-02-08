@@ -2,7 +2,7 @@
 	"name": "Awesomebot",
 	"description": "An awesome bot for Discord",
 	"author": "sKiL <skil@skildust.com> (https://skildust.com)",
-	"version": "0.6.2-20180206",
+	"version": "0.6.2-20180208",
 	"repository": "https://git.skildust.com/sKiL/awesomebot",
 	"license": "MIT",
 	"keywords": [
@@ -26,6 +26,6 @@
 		"tar.gz": "^1.0.7",
 		"uglify-es": "github:mishoo/UglifyJS2#harmony",
 		"ws": "^3.3.3",
-		"ytdl-core": "^0.18.7"
+		"ytdl-core": "^0.20.1"
 	}
 }
