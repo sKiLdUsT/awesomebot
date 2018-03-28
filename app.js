@@ -15,7 +15,7 @@ let bot = new Map()
 log.info(`${pjson.name} Version ${pjson.version} (${revision}), loading...`)
 
 function selfCleanup (e) {
-  if (e) {
+  if (e && e instanceof Error) {
     log.error(e)
     fs.writeFileSync('dirtyexit', JSON.stringify({
       error: e.toString(),
