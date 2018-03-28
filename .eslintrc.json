@@ -1,0 +1,10 @@
+{
+  "extends": "standard",
+  "parserOptions": {
+    "ecmaVersion": 2015,
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "impliedStrict": true
+    }
+  }
+}
