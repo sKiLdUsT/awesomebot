@@ -235,7 +235,7 @@ module.exports = class {
   _enqueueSong (url, qOptions, message) {
     return new Promise((resolve, reject) => {
       const filename = './cache/' + tools.guid() + '.media.tmp'
-      let video = ytdl(url, {quality: 'highest', filter: 'audioonly'})
+      let video = ytdl(url, {quality: '43', ratebypass: 'yes'})
       let pTimeout
       video
         .on('info', async info => {
