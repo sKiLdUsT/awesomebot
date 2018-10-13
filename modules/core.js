@@ -1,10 +1,11 @@
 'use strict'
 const fs = require('fs')
 const config = require('../config.json')
+const Module = require('../lib/module')
 
-module.exports = class {
-  constructor () {
-    this.permissions = ['mod', 'admin']
+module.exports = class extends Module {
+  constructor (instance) {
+    super('core', ['mod', 'admin'], instance)
   }
   help (args, message) {
     let fields = []
