@@ -1,0 +1,13 @@
+{
+  "version" : 2,
+  "App" : {
+    "commandPrefix" : ".",
+    "LogLevel" : 2,
+    "botName" : "Awesomebot"
+  },
+  "Discord": {
+    "token" : "",
+    "adminId" : "",
+    "reportErrorsToAdmin" : true
+  }
+}

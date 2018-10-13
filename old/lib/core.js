@@ -6,7 +6,7 @@ const { execSync } = require('child_process')
 const fs = require('fs')
 const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
 const log = require('./log.js')
-const pjson = require('../package.json')
+const pjson = require('../../package.json')
 const lastCrash = fs.existsSync('./dirtyexit') ? (function () { let json = JSON.parse(String(fs.readFileSync('./dirtyexit'))); fs.unlinkSync('./dirtyexit'); return json })() : false
 
 class Bot {
@@ -22,10 +22,10 @@ class Bot {
       }
     })
     this.modules = {
-      core: new (require(`../modules/core.js`))(this)
+      core: new (require(`./old/modules/core.js`))(this)
     }
     this.settings.core.modules.forEach(module => {
-      this.modules[module] = new (require(`../modules/${module}.js`))(this)
+      this.modules[module] = new (require(`./old/modules`))(this)
     })
     Object.values(this.modules).forEach(this._attachModule, this)
     if (this.settings.lastRev !== revision) {

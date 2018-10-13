@@ -1,5 +1,5 @@
 'use strict'
-const config = require('../config.json')
+const config = require('../../config.json')
 const colors = require('colors')
 colors.setTheme({
   info: 'green',

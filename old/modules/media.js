@@ -1,5 +1,5 @@
 'use strict'
-const config = require('../config.json')
+const config = require('../../config.json')
 const rimraf = require('rimraf').sync
 const fs = require('fs')
 const ytdl = require('ytdl-core')

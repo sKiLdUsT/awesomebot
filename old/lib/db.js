@@ -4,7 +4,7 @@ const Sqlite3 = require('better-sqlite3')
 const log = require('./log.js')
 const { execSync } = require('child_process')
 const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
-const config = require('../config.json')
+const config = require('../../config.json')
 
 class DB {
   constructor (guildId) {

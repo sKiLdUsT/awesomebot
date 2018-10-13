@@ -1,6 +1,6 @@
 'use strict'
 const fs = require('fs')
-const config = require('../config.json')
+const config = require('../../config.json')
 const Module = require('../lib/module')
 
 module.exports = class extends Module {
@@ -97,7 +97,7 @@ module.exports = class extends Module {
       return false
     }
     this.settings.modules = args[1]
-    this.modules[args[1]] = new (require(`../modules/${args[1]}.js`))(this)
+    this.modules[args[1]] = new (require(`./old/modules`))(this)
     this._attachModule(this.modules[args[1]])
     message.channel.send(`✔ Added module **${args[1]}**`)
     return true

@@ -1,7 +1,8 @@
 {
+  "version" : 1,
   "App" : {
     "commandPrefix" : ".",
-    "logLevel" : 2
+    "LogLevel" : 2
   },
   "Discord": {
     "token" : "",
