@@ -45,28 +45,42 @@ module.exports = class Log {
    * @param {string} string
    */
   static debug (string) {
-    if (config.App.logLevel <= 1) console.log(`${this._date()} ${colors.debug('[DEBUG]')} ${string}`)
+    if (config.App.logLevel <= 1) {
+      console.log(`${this._date()} ${colors.debug('[DEBUG]')} ${string}`)
+    }
   }
   /**
    * Log a message on info level
    * @param {string} string
    */
   static info (string) {
-    if (config.App.logLevel <= 2) console.log(`${this._date()} ${colors.info('[INFO]')}  ${string}`)
+    if (config.App.logLevel <= 2) {
+      console.log(`${this._date()} ${colors.info('[INFO]')}  ${string}`)
+    }
   }
   /**
    * Log a message on warn level
    * @param {string} string
    */
   static warn (string) {
-    if (config.App.logLevel <= 3) console.log(`${this._date()} ${colors.warn('[WARN]')}  ${string}`)
+    if (config.App.logLevel <= 3) {
+      console.log(`${this._date()} ${colors.warn('[WARN]')}  ${string}`)
+    }
   }
   /**
    * Log a message on error level. Can also be used to gracefully handle error reporting
    * @param {string|Error} string
    */
   static error (string) {
-    if (string instanceof Error) string = string.message
-    if (config.App.logLevel <= 4) console.log(`${this._date()} ${colors.error('[ERROR]')} ${string}`)
+    if (string instanceof Error) {
+      if (config.App.logLevel <= 1) {
+        string = string.stack
+      } else {
+        string = string.message
+      }
+    }
+    if (config.App.logLevel <= 4) {
+      console.log(`${this._date()} ${colors.error('[ERROR]')} ${string}`)
+    }
   }
 }

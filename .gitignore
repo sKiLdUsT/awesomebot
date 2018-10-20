@@ -4,3 +4,4 @@ config.json
 log
 db.sqlite
 dirtyexit
+/storage/modules/user:*

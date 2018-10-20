@@ -27,11 +27,10 @@ module.exports = class DB {
    * @private
    */
   _prepareDB () {
-    if (!fs.existsSync(this.dbPath)) {
-      log.warn('Database missing, recreating')
+    this.db = new Sqlite3(this.dbPath)
+    let statement = this.db.prepare('select "name" from "sqlite_master" where type="table" and name=?;')
+    if (statement.get(['guilds']) === undefined || statement.get(['modules']) === undefined || statement.get(['permissions']) === undefined || statement.get(['moduleConfig']) === undefined) {
       this._createDB()
-    } else {
-      this.db = new Sqlite3(this.dbPath)
     }
     if (fs.existsSync(path.resolve(__dirname, '../../cache/cache.bin'))) {
       this._migrateOldDB()
@@ -39,13 +38,18 @@ module.exports = class DB {
   }
 
   /**
-   * Create DB if nonexistent
+   * Create DB if nonexistent or incomplete
    * @private
    */
   _createDB () {
+    log.warn('DB missing, recreating')
+    log.debug('action CreateChangeDBSchema')
     this.db = new Sqlite3(this.dbPath)
-    let schema = String(fs.readFileSync(path.resolve(__dirname, '../dbSchema.sql')))
-    this.db.prepare(schema).run()
+    let schema = String(fs.readFileSync(path.resolve(__dirname, '../dbSchema.sql'))).split('\n')
+    schema.forEach(row => {
+      log.debug(`action ExecDB stmt "${row}"`)
+      this.db.exec(row)
+    })
   }
 
   /**
@@ -60,7 +64,7 @@ module.exports = class DB {
         continue
       }
       let guild = migrate[id]
-      this.db.prepare(`INSERT INTO guilds VALUES (?, ?, ?);`).run([
+      this.db.prepare(`insert into guilds values (?, ?, ?);`).run([
         id,
         'core',
         JSON.stringify({
@@ -69,7 +73,7 @@ module.exports = class DB {
           }
         })
       ])
-      let perm = this.db.prepare('INSERT INTO permissions VALUES (?, ?, ?);')
+      let perm = this.db.prepare('insert into permissions values (?, ?, ?);')
       for (let uid in guild.permissions) {
         if (!guild.permissions.hasOwnProperty(uid)) {
           continue
@@ -96,35 +100,38 @@ module.exports = class DB {
    */
   get (tableName, key, valArgs) {
     if (tableName === undefined || typeof tableName !== 'string') {
-      throw new AwesomeBotException('Arguemnt "tableName" is not defined')
+      throw new AwesomeBotException('Argument "tableName" is not defined')
     }
     if (valArgs === undefined || typeof valArgs !== 'object') {
-      throw new AwesomeBotException('Arguemnt "valArgs" is not defined')
+      throw new AwesomeBotException('Argument "valArgs" is not defined')
     }
 
     let args = []
-    let argsStmt = 'WHERE '
+    let argsStmt = 'where '
     let i = 1
     for (let key in valArgs) {
-      args.push(valArgs[key])
+      args.push(key)
+      args.push(`"${valArgs[key].replace(/"/g, '""')}"`)
       argsStmt += '? = ?'
       if (i < Object.keys(valArgs).length) {
         i++
-        argsStmt += ' AND'
+        argsStmt += ' and '
       }
     }
 
-    let statement = this.db.prepare('SELECT ? from ? ' + argsStmt + ';')
+    let stmt = (' ' + `select ${key} from ${tableName} ${argsStmt};`).slice(1)
+    args.forEach(arg => {
+      stmt = stmt.replace(/[?]/, arg)
+    })
+
+    let statement = this.db.prepare(stmt)
     let result = {}
 
     try {
-      result = statement.get([key, tableName].concat(args))
+      log.debug(`action ExecDB stmt "${stmt}"`)
+      result = statement.get()
     } catch (e) {
       return result
-    }
-
-    if (result === undefined) {
-      result = {}
     }
 
     return result
@@ -136,19 +143,103 @@ module.exports = class DB {
    * @param key
    */
   getAll (tableName, key) {
-    let statement = this.db.prepare('SELECT ? from ?;')
+    let statement = this.db.prepare(`select ${key} from ${tableName};`)
     let result = {}
 
     try {
-      result = statement.all([key, tableName])
+      log.debug(`action ExecDB stmt "select ${key} from ${tableName};"`)
+      result = statement.all()
     } catch (e) {
       return result
     }
 
-    if (result === undefined) {
-      result = {}
+    return result
+  }
+
+  /**
+   * Put values into DB
+   * @param {String} tableName
+   * @param {String} values
+   * @returns {boolean}
+   */
+  put (tableName, values) {
+    let argsStmt = []
+    values.forEach(() => {
+      argsStmt.push('?')
+    })
+
+    let statement = this.db.prepare(`insert into ${tableName} values (${argsStmt.join(',')});`)
+
+    let stmt = (' ' + `insert into ${tableName} values (${argsStmt.join(',')});`).slice(1)
+    values.forEach(arg => {
+      stmt = stmt.replace(/[?]/, `"${arg.replace(/"/g, '""')}"`)
+    })
+
+    try {
+      log.debug(`action ExecDB stmt "${stmt}"`)
+      statement.run(values)
+    } catch (e) {
+      return false
     }
 
-    return result
+    return true
+  }
+
+  /**
+   *
+   * @param {String} tableName
+   * @param {Object} values
+   * @param {Object} search
+   * @returns {boolean}
+   */
+  update (tableName, values, search) {
+    if (tableName === undefined || typeof tableName !== 'string') {
+      throw new AwesomeBotException('Argument "tableName" is not defined')
+    }
+    if (values === undefined || typeof values !== 'object') {
+      throw new AwesomeBotException('Argument "key" is not defined')
+    }
+    if (search === undefined || typeof search !== 'object') {
+      throw new AwesomeBotException('Argument "key" is not defined')
+    }
+
+    let args = []
+    let searchArgsStmt = ''
+    let argsStmt = ''
+    let i = 1
+    for (let key in values) {
+      args.push(key)
+      args.push(`"${values[key].replace(/"/g, '""')}"`)
+      argsStmt += '? = ?'
+      if (i < Object.keys(values).length) {
+        i++
+        argsStmt += ','
+      }
+    }
+    for (let key in search) {
+      args.push(key)
+      args.push(`"${search[key].replace(/"/g, '""')}"`)
+      searchArgsStmt += '? = ?'
+      if (i < Object.keys(search).length) {
+        i++
+        searchArgsStmt += ' and '
+      }
+    }
+
+    let stmt = `update ${tableName} set ${argsStmt} where ${searchArgsStmt};`
+    args.forEach(arg => {
+      stmt = stmt.replace(/[?]/, arg)
+    })
+
+    let statement = this.db.prepare(stmt)
+
+    try {
+      log.debug(`action ExecDB stmt "${stmt}"`)
+      statement.run(stmt)
+    } catch (e) {
+      return false
+    }
+
+    return true
   }
 }

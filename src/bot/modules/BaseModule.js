@@ -33,6 +33,8 @@ module.exports = class BaseModule {
       throw new AwesomeBotError('Argument "moduleId" is not defined')
     }
     this._getConfig()
+    this._checkStorage()
+    this._checkCache()
   }
 
   /**
@@ -44,24 +46,57 @@ module.exports = class BaseModule {
   }
 
   /**
-   * Get a file from the module file storage
-   * @param {String} name
-   * @returns {String}
+   * Checks if the module storage folder is present and if not creates it
    * @private
    */
-  async _getFile (name) {
-    try {
-      await fs.readdir(path.resolve(__dirname, '../../../cache/modules'))
-      await fs.readdir(path.resolve(__dirname, '../../../cache/modules/', this.moduleId))
-    } catch (e) {
-      await fs.mkdir(path.resolve(__dirname, '../../../cache/modules'))
-      await fs.mkdir(path.resolve(__dirname, '../../../cache/modules/', this.moduleId))
-      return ''
-    }
-    try {
-      return await fs.readFile(path.resolve(__dirname, '../../../cache/modules', this.moduleId, name))
-    } catch (e) {
-      return ''
-    }
+  _checkStorage () {
+    let self = this
+    fs.readdir(path.resolve(__dirname, '../../../storage/modules/', self.moduleId), err => {
+      if (err) {
+        fs.mkdir(path.resolve(__dirname, '../../../storage/modules/', self.moduleId), () => {})
+      }
+    })
+  }
+
+  /**
+   * Checks if the module cache folder is present and if not creates it
+   * @private
+   */
+  _checkCache () {
+    let self = this
+    fs.readdir(path.resolve(__dirname, '../../../cache/', self.moduleId), err => {
+      if (err) {
+        fs.mkdir(path.resolve(__dirname, '../../../cache/', self.moduleId), () => {})
+      }
+    })
+  }
+
+  /**
+   * Get a file from the module file storage
+   * @param {String} name
+   * @returns {Promise<Buffer>}
+   */
+  getFile (name) {
+    let self = this
+    return new Promise((resolve, reject) => {
+      fs.readFile(path.resolve(__dirname, '../../../storage/modules', self.moduleId, name), (err, data) => {
+        if (err) reject(err)
+        resolve(data)
+      })
+    })
+  }
+  /**
+   * Get a file from the module file cache
+   * @param {String} name
+   * @returns {Promise<Buffer>}
+   */
+  getFileFromCache (name) {
+    let self = this
+    return new Promise((resolve, reject) => {
+      fs.readFile(path.resolve(__dirname, '../../../cache/', self.moduleId, name), (err, data) => {
+        if (err) reject(err)
+        resolve(data)
+      })
+    })
   }
 }

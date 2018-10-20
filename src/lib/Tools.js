@@ -38,6 +38,7 @@ module.exports = class Tools {
       })
       fs.writeFileSync('.dirtyexit', errorData)
       await this.reportToAdmin(e)
+      log.error(e)
       await this.handleInterrupt()
     } else {
       await this.handleInterrupt()
@@ -68,7 +69,7 @@ module.exports = class Tools {
     if (config.Discord.reportErrorsToAdmin) {
       const adminUser = await this.client.fetchUser(config.Discord.adminId)
       const channel = await adminUser.createDM()
-      await channel.sendMessage(`✖ Critical Error occured\n\`\`\`[${log.date()}] ${e.stack}\`\`\``)
+      await channel.sendMessage(`✖ Critical Error occured\n\`\`\`[${log._date()}] ${e.stack}\`\`\``)
       await this.client.destroy()
     }
     return true

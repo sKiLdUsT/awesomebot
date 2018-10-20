@@ -10,7 +10,6 @@ log.debug('state initClasses')
 const Discord = require('discord.js')
 const Client = new Discord.Client()
 const tools = new (require('./lib/Tools'))(Client)
-const error = new (require('./lib/Error'))()
 const config = new (require('./lib/Config'))()
 const AwesomeBotError = require('./lib/Error')
 const NotFoundError = require('./lib/NotFoundError')
@@ -82,11 +81,11 @@ Client
   })
   .on('message', message => {
     log.debug('event ClientMessageReceived')
-    if (message.author.bot || message.content.indexOf(config.app.commandPrefix) !== 0) {
+    if (message.author.bot || message.content.indexOf(config.App.commandPrefix) !== 0) {
       log.debug('event ClientMessageDismissed reason unrelated')
       return
     }
-    if (message.channel.type === 'dm' && (message.content !== '.help' || message.content !== '.invite')) {
+    if (message.channel.type === 'dm' && (message.content !== '.help'.replace('.', config.App.commandPrefix) && message.content !== '.invite'.replace('.', config.App.commandPrefix))) {
       log.debug('event ClientMessageDismissed reason privateMessage')
       message.reply('🔴 You can\'t use this bot in private messages.')
       return
@@ -94,16 +93,24 @@ Client
     let args = message.content.split(/ +/g)
     let command = args[0].slice(config.App.commandPrefix.length).replace('_', '').replace('constructor', '')
     try {
-      instances.get(message.channel.guild.id).exec(command, args.slice(1, -1), message)
+      if (message.channel.type === 'dm') {
+        instances.values().next().value.exec(command, args, message)
+      } else {
+        instances.get(message.channel.guild.id).exec(command, args, message)
+      }
     } catch (e) {
       log.debug('event BotErrorThrown')
-      if (e instanceof AwesomeBotError) {
-        log.debug('event BotError type internal')
-        message.channel.send(`🔴 Whoops, while completing your request an internal error has occurred.`)
-      }
+      log.error(e)
       if (e instanceof NotFoundError) {
         log.debug('event BotError type commandNotFound')
         message.channel.send(`🔴 Unknown command! (type \`${config.App.commandPrefix}help\` for all commands available)`)
+      } else {
+        if (e instanceof AwesomeBotError) {
+          log.debug('event BotError type internal')
+        } else {
+          log.debug('event BotError type unknown')
+        }
+        message.channel.send(`🔴 Whoops, while completing your request an internal error has occurred.`)
       }
     }
   })
