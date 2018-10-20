@@ -12,6 +12,9 @@ const log = require('../lib/Log')
 const DB = require('./DB')
 const GuildSettings = require('./GuildSettings')
 const GuildMember = require('./GuildMember')
+const { execSync } = require('child_process')
+const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
+const pjson = require('../../package.json')
 
 module.exports = class Bot {
   constructor (client, guild) {
@@ -60,6 +63,13 @@ module.exports = class Bot {
           module: module[1]
         })
       }, this)
+    }
+
+    if (this.settings.lastRev !== revision) {
+      let channel = this.settings.config.onlyListenIn !== '0' ? this.guild.channels.get(this.settings.config.onlyListenIn) : this.guild.channels.get(this.guild.systemChannelID)
+      let changes = String(execSync(`git rev-list ${this.settings.config.lastRev}...HEAD --pretty=format:"%h %s (%cr)"`)).replace(/.+\n(.+(\n|$))/g, '$1')
+      channel.send(`❤ ${pjson.name} just got updated to version ${pjson.version} (Rev ${revision})!\n The following has changed:\n\`\`\`${changes}\`\`\`\n<https://github.com/sKiLdUsT/awesomebot/compare/${this.settings.lastRev}...${revision}>`)
+      this.settings.config.lastRev = revision
     }
   }
   exec (command, args, message) {

@@ -38,7 +38,9 @@ module.exports = class GuildSettings {
           greetMessage: 'Welcome #member to #server! Enjoy your stay :)',
           informOnLeave: false,
           leaveMessage: 'Aww shucks, #member left us :(',
-          ouputError: false
+          ouputError: false,
+          lastRev: '4e5cd57',
+          onlyListenIn: '0'
         }
       }
     } else {

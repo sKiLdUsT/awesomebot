@@ -27,7 +27,7 @@ module.exports = class DB {
    * @private
    */
   _prepareDB () {
-    this.db = new Sqlite3(this.dbPath)
+    this.db = new Sqlite3(this.dbPath, {memory: false, readonly: false, fileMustExist: false})
     let statement = this.db.prepare('select "name" from "sqlite_master" where type="table" and name=?;')
     if (statement.get(['guilds']) === undefined || statement.get(['modules']) === undefined || statement.get(['permissions']) === undefined || statement.get(['moduleConfig']) === undefined) {
       this._createDB()
