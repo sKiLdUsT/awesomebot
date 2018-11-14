@@ -122,6 +122,21 @@ module.exports = class BaseModule {
     })
   }
 
+  /**
+   * Remove a file from the module file cache
+   * @param name
+   * @returns {Promise<any>}
+   */
+  removeFileFromCache (name) {
+    let self = this
+    return new Promise((resolve, reject) => {
+      fs.unlink(path.resolve(__dirname, '../../../cache/', self.moduleId, name), (err, data) => {
+        if (err) reject(err)
+        resolve(data)
+      })
+    })
+  }
+
   fileStreamToCache (name) {
     if (name === undefined) {
       name = tools.guid()

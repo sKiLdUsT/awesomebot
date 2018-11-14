@@ -28,6 +28,13 @@ process
   .on('uncaughtException', tools.selfCleanup.bind(tools))
 
 log.debug('state initClient')
+log.info('\n' +
+  '           _                \n' +
+  '     /\\   | |               \n' +
+  '    /  \\  | | ___ _ __ ___  \n' +
+  '   / /\\ \\ | |/ _ \\ \'__/ _ \\ \n' +
+  '  / ____ \\| |  __/ | | (_) |\n' +
+  ' /_/    \\_\\_|\\___|_|  \\___/ \n')
 log.info(`"${config.App.botName}" - Built on Awesomebot Alero v${pjson.version}`)
 log.info(`Loading...`)
 

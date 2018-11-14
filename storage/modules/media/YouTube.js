@@ -6,13 +6,18 @@
 
 const Ytdl = require('ytdl-core')
 
+/**
+ * Youtube Module
+ * @type {Media.YouTube}
+ */
+
 module.exports = class YouTube {
-  constructor (parrent) {
-    this.parrent = parrent
+  constructor (parent) {
+    this.parent = parent
   }
   async play (url, message, author, fileStream) {
     this.fileStream = fileStream
-    let vid = url.match(/https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?([^&]+)/).last()
+    let vid = this._lastArrayElement(url.match(/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?(.*)$/))
     try {
       let info = await this._enqueueVideo(vid, {channel: message.channel.id, author}, message)
       message.edit(`⚪ Enqueued ${info.title}!`, {embed: {
@@ -43,11 +48,11 @@ module.exports = class YouTube {
     let videoInfo
     return new Promise((resolve, reject) => {
       const stream = self.fileStream.stream
-      let video = new Ytdl(url, {quality: 'highestaudio', ratebypass: 'yes'})
+      let video = new Ytdl(url, {quality: 'highestaudio', filter: 'audioonly', ratebypass: 'yes'})
       let pTimeout
       video
         .on('info', async info => {
-          let maxLength = self.parrent.settings.maxLength
+          let maxLength = self.parent.config.maxLength
           if (info.length_seconds > maxLength) {
             video.destroy()
             video = undefined
@@ -72,9 +77,9 @@ module.exports = class YouTube {
         })
         .on('end', () => {
           if (pTimeout) clearTimeout(pTimeout)
-          self.parrent.playqueue.push(videoInfo)
-          self.parrent._saveQueue()
-          if (!self.parrent.playing) self.parrent._player()
+          self.parent.playqueue.push(videoInfo)
+          self.parent._saveQueue()
+          if (!self.parent.playing) self.parent._player()
           return resolve(video.info)
         })
         .on('error', e => {
@@ -84,5 +89,8 @@ module.exports = class YouTube {
         })
         .pipe(stream)
     })
+  }
+  _lastArrayElement (array) {
+    return array[array.length - 1]
   }
 }
