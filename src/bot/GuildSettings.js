@@ -22,40 +22,47 @@ module.exports = class GuildSettings {
       this.guildId = guildId
     }
 
-    this.settings = this.db.get('guilds', '*', {id: this.guildId})
-    if (this.settings === undefined) {
-      this.db.put('guilds', [this.guildId, 'core', JSON.stringify({
-        greetNewUsers: true,
-        greetMessage: 'Welcome #member to #server! Enjoy your stay :)',
-        informOnLeave: false,
-        leaveMessage: 'Aww shucks, #member left us :(',
-        ouputError: false
-      })])
+    let settings = this.db.get('guilds', '*', {id: this.guildId})
+    this.settings = {}
+    if (settings === undefined) {
       this.settings = {
         modules: ['core'],
         config: {
           greetNewUsers: true,
           greetMessage: 'Welcome #member to #server! Enjoy your stay :)',
-          informOnLeave: false,
+          informOnLeave: true,
           leaveMessage: 'Aww shucks, #member left us :(',
-          ouputError: false,
+          ouputErrors: false,
           lastRev: '4e5cd57',
-          onlyListenIn: '0'
+          onlyListenIn: '0',
+          voiceChannel: '0'
         }
       }
+      this._syncToDB(true).catch(e => {
+        log.error(e)
+        log.warn('Syncing config with db failed!')
+      })
     } else {
       // noinspection JSCheckFunctionSignatures
-      this.settings.config = JSON.parse(this.settings.config)
-      this.settings.modules = this.settings.modules.split(',')
+      this.settings.config = JSON.parse(settings.config)
+      this.settings.modules = settings.modules.split(',')
     }
   }
-  async _syncToDB () {
-    this.db.update('guilds', {
-      modules: this.settings.modules.join(','),
-      config: JSON.stringify(this.settings.config)
-    }, {
-      id: this.guildId
-    })
+  async _syncToDB (doNewEntry) {
+    if (doNewEntry !== undefined && doNewEntry) {
+      this.db.insertReplace('guilds', [
+        this.guildId,
+        this.settings.modules.join(','),
+        JSON.stringify(this.settings.config)
+      ])
+    } else {
+      this.db.update('guilds', {
+        modules: this.settings.modules.join(','),
+        config: JSON.stringify(this.settings.config)
+      }, {
+        id: this.guildId
+      })
+    }
   }
   get config () {
     let self = this

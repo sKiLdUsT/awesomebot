@@ -6,6 +6,7 @@
 
 const Bot = require('../Bot')
 const AwesomeBotError = require('../../lib/Error')
+let tools
 const fs = require('fs')
 const path = require('path')
 
@@ -16,7 +17,7 @@ module.exports = class BaseModule {
    * @param {String} moduleId
    * @param {Array} permissions
    */
-  constructor (botInstance, moduleId, permissions) {
+  constructor (botInstance, moduleId, permissions, defaultConfig) {
     if (botInstance instanceof Bot) {
       this.bot = botInstance
     } else {
@@ -32,6 +33,14 @@ module.exports = class BaseModule {
     } else {
       throw new AwesomeBotError('Argument "moduleId" is not defined')
     }
+
+    this.defaultConfig = {}
+    if (defaultConfig !== undefined) {
+      this.defaultConfig = defaultConfig
+    }
+
+    tools = new (require('../../lib/Tools'))(botInstance.client)
+
     this._getConfig()
     this._checkStorage()
     this._checkCache()
@@ -43,6 +52,9 @@ module.exports = class BaseModule {
    */
   _getConfig () {
     this.config = this.bot.db.get('moduleConfig', 'config', {moduleId: this.moduleId})
+    if (this.config === undefined) {
+      this.bot.db.put('moduleConfig', [this.bot.guild.id, this.moduleId, JSON.stringify(this.defaultConfig)])
+    }
   }
 
   /**
@@ -85,6 +97,16 @@ module.exports = class BaseModule {
       })
     })
   }
+
+  /**
+   * /**
+   * Get a file as module from the module file storage
+   * @param {String} name
+   * @returns {*}
+   */
+  getFileAsModule (name) {
+    return require(path.resolve(__dirname, '../../../storage/modules', this.moduleId, name))
+  }
   /**
    * Get a file from the module file cache
    * @param {String} name
@@ -98,5 +120,17 @@ module.exports = class BaseModule {
         resolve(data)
       })
     })
+  }
+
+  fileStreamToCache (name) {
+    if (name === undefined) {
+      name = tools.guid()
+    }
+    let stream = fs.createWriteStream(path.resolve(__dirname, '../../../cache/', this.moduleId, name))
+
+    return {
+      name,
+      stream
+    }
   }
 }

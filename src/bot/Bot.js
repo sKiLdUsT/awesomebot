@@ -15,6 +15,7 @@ const GuildMember = require('./GuildMember')
 const { execSync } = require('child_process')
 const revision = String(execSync('git log -1 --oneline')).slice(0, 7)
 const pjson = require('../../package.json')
+const config = new (require('../lib/Config'))()
 
 module.exports = class Bot {
   constructor (client, guild) {
@@ -35,6 +36,14 @@ module.exports = class Bot {
     this.settings = new GuildSettings(this.db, this.guild.id)
     this.members = new Map()
     this.modules = new Map()
+
+    if (this.settings.config.onlyListenIn === '0') {
+      this.settings.config.onlyListenIn = this.guild.systemChannelID
+      this.guild.channels.get(this.settings.config.onlyListenIn).send(`🔶 Bot channel not set, defaulting to <#${this.settings.config.onlyListenIn}>. Please advise the server admin to set a proper one with \`${config.App.commandPrefix}set\` (see \`${config.App.commandPrefix}help\` on how to do that)`)
+    }
+    if (this.settings.config.voiceChannel === '0') {
+      this.guild.channels.get(this.settings.config.onlyListenIn).send(`🔶 Voice channel not set! Please advise the server admin to set one with \`${config.App.commandPrefix}set\` (see \`${config.App.commandPrefix}help\` on how to do that)`)
+    }
 
     this.guild.members.forEach(member => {
       if (member.id !== this.client.id) {
@@ -65,10 +74,10 @@ module.exports = class Bot {
       }, this)
     }
 
-    if (this.settings.lastRev !== revision) {
-      let channel = this.settings.config.onlyListenIn !== '0' ? this.guild.channels.get(this.settings.config.onlyListenIn) : this.guild.channels.get(this.guild.systemChannelID)
+    if (this.settings.config.lastRev !== revision) {
+      let channel = this.guild.channels.get(this.settings.config.onlyListenIn)
       let changes = String(execSync(`git rev-list ${this.settings.config.lastRev}...HEAD --pretty=format:"%h %s (%cr)"`)).replace(/.+\n(.+(\n|$))/g, '$1')
-      channel.send(`❤ ${pjson.name} just got updated to version ${pjson.version} (Rev ${revision})!\n The following has changed:\n\`\`\`${changes}\`\`\`\n<https://github.com/sKiLdUsT/awesomebot/compare/${this.settings.lastRev}...${revision}>`)
+      channel.send(`❤ ${pjson.name} just got updated to version ${pjson.version} (Rev ${revision})!\n The following has changed:\n\`\`\`${changes}\`\`\`\n<https://github.com/sKiLdUsT/awesomebot/compare/${this.settings.config.lastRev}...${revision}>`)
       this.settings.config.lastRev = revision
     }
   }

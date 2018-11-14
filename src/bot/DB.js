@@ -159,7 +159,7 @@ module.exports = class DB {
   /**
    * Put values into DB
    * @param {String} tableName
-   * @param {String} values
+   * @param {Array} values
    * @returns {boolean}
    */
   put (tableName, values) {
@@ -235,7 +235,36 @@ module.exports = class DB {
 
     try {
       log.debug(`action ExecDB stmt "${stmt}"`)
-      statement.run(stmt)
+      statement.run()
+    } catch (e) {
+      log.error(e)
+      return false
+    }
+
+    return true
+  }
+  /**
+   *
+   * @param {String} tableName
+   * @param {Object} values
+   * @returns {boolean}
+   */
+  insertReplace (tableName, values) {
+    let argsStmt = []
+    values.forEach(() => {
+      argsStmt.push('?')
+    })
+
+    let statement = this.db.prepare(`insert into ${tableName} values (${argsStmt.join(',')});`)
+
+    let stmt = (' ' + `insert or replace into ${tableName} values (${argsStmt.join(',')});`).slice(1)
+    values.forEach(arg => {
+      stmt = stmt.replace(/[?]/, `"${arg.replace(/"/g, '""')}"`)
+    })
+
+    try {
+      log.debug(`action ExecDB stmt "${stmt}"`)
+      statement.run(values)
     } catch (e) {
       return false
     }
