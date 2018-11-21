@@ -137,6 +137,11 @@ module.exports = class BaseModule {
     })
   }
 
+  /**
+   * Creates a writable file stream in the cache
+   * @param name
+   * @returns {{name: string, stream: WriteStream}}
+   */
   fileStreamToCache (name) {
     if (name === undefined) {
       name = tools.guid()
@@ -146,6 +151,78 @@ module.exports = class BaseModule {
     return {
       name,
       stream
+    }
+  }
+
+  /**
+   * Returns the guild default voice channel if set
+   * @returns {(string|undefined)}
+   */
+  getVoiceChannel () {
+    let guildConfig = this.bot.settings.config
+
+    if (guildConfig.voiceChannel === '0') {
+      this.bot.guild.channels.get(guildConfig.onlyListenIn).send(`🔴 Voice channel not set!`)
+      return
+    }
+
+    return guildConfig.voiceChannel
+  }
+
+  /**
+   * Returns the guild default voice channel if set
+   * @returns {(string|void)}
+   */
+  _getVoiceChannel () {
+    let guildConfig = this.bot.settings.config
+
+    if (guildConfig.voiceChannel === '0') {
+      this.bot.guild.channels.get(guildConfig.onlyListenIn).send(`🔴 Voice channel not set!`)
+      return
+    }
+
+    return this.bot.client.channels.get(guildConfig.voiceChannel)
+  }
+
+  /**
+   * Returns a voice connection
+   * @returns {integer}
+   */
+  async getVoiceConnection () {
+    let guildConfig = this.bot.settings.config
+    let eventsToAttach = {}
+    let voiceConnection = this._getVoiceChannel()
+
+    if (voiceConnection === undefined) {
+      throw new TypeError('test')
+    } else {
+      voiceConnection = await voiceConnection.join()
+    }
+
+    return {
+      on: (name, callback) => {
+        if (eventsToAttach[name] === undefined) {
+          eventsToAttach[name] = []
+        }
+        eventsToAttach[name].push(callback)
+      },
+      play: fileName => {
+        if (this.bot.voiceDispatcher !== false) {
+          this.dispatcher.end()
+        }
+        this.bot.voiceDispatcher = voiceConnection.playFile(fileName)
+        this.bot.voiceDispatcher.setVolume(guildConfig.volume)
+        this.bot.voiceDispatcher.setBitrate(64)
+
+        for (let eventName in eventsToAttach) {
+          if (!eventsToAttach.hasOwnProperty(eventName)) {
+            continue
+          }
+          eventsToAttach[eventName].forEach(callback => {
+            this.bot.voiceDispatcher.on(eventName, callback)
+          })
+        }
+      }
     }
   }
 }

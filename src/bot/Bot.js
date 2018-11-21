@@ -36,6 +36,7 @@ module.exports = class Bot {
     this.settings = new GuildSettings(this.db, this.guild.id)
     this.members = new Map()
     this.modules = new Map()
+    this.voiceDispatcher = false
 
     if (this.settings.config.onlyListenIn === '0') {
       this.settings.config.onlyListenIn = this.guild.systemChannelID

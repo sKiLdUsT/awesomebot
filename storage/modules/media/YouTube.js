@@ -20,6 +20,7 @@ module.exports = class YouTube {
     let vid = this._lastArrayElement(url.match(/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?(.*)$/))
     try {
       let info = await this._enqueueVideo(vid, {channel: message.channel.id, author}, message)
+      console.log(info);
       message.edit(`⚪ Enqueued ${info.title}!`, {embed: {
         title: info.title,
         fields: [{
@@ -85,7 +86,7 @@ module.exports = class YouTube {
         .on('error', e => {
           video.destroy()
           video = undefined
-          reject(e)
+          return reject(e)
         })
         .pipe(stream)
     })

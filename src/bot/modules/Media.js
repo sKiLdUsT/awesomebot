@@ -74,29 +74,19 @@ module.exports = class Media extends BaseModule {
     if (this.bot.guild.voiceConnection) {
       connection = this.bot.guild.voiceConnection
     } else {
-      if (this.settings.config.voiceChannel === '0') {
-        await this.bot.guild.channels.get(this.bot.settings.config.onlyListenIn).send('🔴 Voice channel not set!')
-        return
-      }
-      connection = await this.bot.guild.channels.get(this.bot.settings.config.voiceChannel).join()
+      connection = await super.getVoiceConnection()
     }
 
     console.log(song.info)
 
-    if (this.dispatcher !== false) this.dispatcher.end()
-    this.dispatcher = connection.playFile(song.filename)
-    this.dispatcher.setVolume(this.instance.settings.volume)
-    this.dispatcher.setBitrate(64)
-    this.dispatcher.duration = song.info.length_seconds
-    this.dispatcher.song = song.info.title
-    this.dispatcher.url = song.url
-    this.dispatcher.on('end', () => {
+    connection.on('end', () => {
       this.playqueue.shift()
       setTimeout(() => {
         super.removeFileFromCache(song.filename)
       }, 5000)
       self._player()
     })
+    connection.play(song.filename)
     this.playing = true
   }
 }

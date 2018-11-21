@@ -26,7 +26,7 @@ module.exports = class GuildSettings {
     this.settings = {}
     if (settings === undefined) {
       this.settings = {
-        modules: ['core'],
+        modules: ['core', 'media'],
         config: {
           greetNewUsers: true,
           greetMessage: 'Welcome #member to #server! Enjoy your stay :)',
@@ -35,7 +35,8 @@ module.exports = class GuildSettings {
           ouputErrors: false,
           lastRev: '4e5cd57',
           onlyListenIn: '0',
-          voiceChannel: '0'
+          voiceChannel: '0',
+          volume: 0.25
         }
       }
       this._syncToDB(true).catch(e => {

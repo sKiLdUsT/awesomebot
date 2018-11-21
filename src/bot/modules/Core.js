@@ -146,4 +146,39 @@ module.exports = class Core extends BaseModule {
     message.channel.send(`⚪ Revoked <@${targetUser}> permission **${module}.${permission}**`)
     return true
   }
+
+  /**
+   * Adjust volume of media played through bot
+   * @param {Object} args
+   * @param {Message} message
+   * @param {GuildMember} user
+   * @param {Bot} bot
+   * @returns {boolean}
+   */
+  vol (args, message, user, bot) {
+    if (!(user instanceof GuildMember)) {
+      throw new AwesomeBotError('Argument user must be of type discord.js Message')
+    }
+
+    if (args[0] === undefined) {
+      message.channel.send('🔴 Missing value!')
+      return false
+    }
+
+    let targetVolume = args[0]
+
+    if (isNaN(targetVolume)) {
+      message.channel.send('🔴 Value is not a number!')
+      return false
+    }
+
+    targetVolume = (~~targetVolume / 100)
+
+    if (targetVolume > 0.05) {
+      message.channel.send('🔴 Value is too small!')
+    }
+
+    bot.settings.config.volume = targetVolume
+    return true
+  }
 }
