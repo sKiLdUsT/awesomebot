@@ -18,7 +18,7 @@ module.exports = class Config {
     try {
       this.config = require('../../config')
     } catch (e) {
-      fs.copyFileSync(path.resolve(__dirname, '../defaultConfig.json'), path.resolve(__dirname, '../../config.json'))
+      fs.copyFileSync(path.resolve(__dirname, '../defaultConfigV2.json'), path.resolve(__dirname, '../../config.json'))
       this.config = require('../../config')
     }
     this._checkConfig()

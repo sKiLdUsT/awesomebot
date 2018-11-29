@@ -38,6 +38,11 @@ log.info('\n' +
 log.info(`"${config.App.botName}" - Built on Awesomebot Alero v${pjson.version}`)
 log.info(`Loading...`)
 
+if (config.Discord.token === '') {
+  log.warn('No Discord token set. Please configure the bot properly before running it.')
+  tools.selfCleanup.bind(tools)
+}
+
 Client
   .on('ready', async () => {
     log.debug('event clientReadyEvent')
