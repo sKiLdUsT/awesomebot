@@ -2,7 +2,7 @@
   "version" : 2,
   "App" : {
     "commandPrefix" : ".",
-    "LogLevel" : 2,
+    "logLevel" : 2,
     "botName" : "Awesomebot"
   },
   "Discord": {
