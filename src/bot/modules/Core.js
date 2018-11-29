@@ -174,11 +174,16 @@ module.exports = class Core extends BaseModule {
 
     targetVolume = (~~targetVolume / 100)
 
-    if (targetVolume > 0.05) {
+    if (targetVolume < 0.05) {
       message.channel.send('🔴 Value is too small!')
     }
 
     bot.settings.config.volume = targetVolume
+
+    if (this.bot.voiceDispatcher) {
+      this.bot.voiceDispatcher.setVolume(targetVolume)
+    }
+
     return true
   }
 }

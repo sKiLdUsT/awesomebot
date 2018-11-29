@@ -77,8 +77,6 @@ module.exports = class Media extends BaseModule {
       connection = await super.getVoiceConnection()
     }
 
-    console.log(song.info)
-
     connection.on('end', () => {
       this.playqueue.shift()
       setTimeout(() => {
@@ -86,7 +84,7 @@ module.exports = class Media extends BaseModule {
       }, 5000)
       self._player()
     })
-    connection.play(song.filename)
+    connection.play(song.filename, true)
     this.playing = true
   }
 }

@@ -84,6 +84,16 @@ module.exports = class BaseModule {
   }
 
   /**
+   * Get file path for file in cache
+   * @param name
+   * @returns {string}
+   * @private
+   */
+  _getFilePathFromCache (name) {
+    return path.resolve(__dirname, '../../../cache/', this.moduleId, name)
+  }
+
+  /**
    * Get a file from the module file storage
    * @param {String} name
    * @returns {Promise<Buffer>}
@@ -206,7 +216,11 @@ module.exports = class BaseModule {
         }
         eventsToAttach[name].push(callback)
       },
-      play: fileName => {
+      play: (fileName, fromCache) => {
+        if (fromCache !== undefined && fromCache) {
+          fileName = this._getFilePathFromCache(fileName)
+        }
+
         if (this.bot.voiceDispatcher !== false) {
           this.dispatcher.end()
         }

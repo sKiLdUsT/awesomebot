@@ -4,7 +4,7 @@
  */
 'use strict'
 
-const Ytdl = require('ytdl-core')
+const ytdl = require('ytdl-core')
 
 /**
  * Youtube Module
@@ -20,7 +20,6 @@ module.exports = class YouTube {
     let vid = this._lastArrayElement(url.match(/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?(.*)$/))
     try {
       let info = await this._enqueueVideo(vid, {channel: message.channel.id, author}, message)
-      console.log(info);
       message.edit(`⚪ Enqueued ${info.title}!`, {embed: {
         title: info.title,
         fields: [{
@@ -49,7 +48,7 @@ module.exports = class YouTube {
     let videoInfo
     return new Promise((resolve, reject) => {
       const stream = self.fileStream.stream
-      let video = new Ytdl(url, {quality: 'highestaudio', filter: 'audioonly', ratebypass: 'yes'})
+      let video = ytdl(url, {quality: 'highestaudio', filter: 'audioonly', ratebypass: 'yes'})
       let pTimeout
       video
         .on('info', async info => {
@@ -57,7 +56,7 @@ module.exports = class YouTube {
           if (info.length_seconds > maxLength) {
             video.destroy()
             video = undefined
-            return reject(new RangeError(`Media longer than ${Math.floor(maxLength / 60)} minutes! (${Math.floor(info.length_seconds / 60)} minutes)`))
+            reject(new RangeError(`Media longer than ${Math.floor(maxLength / 60)} minutes! (${Math.floor(info.length_seconds / 60)} minutes)`))
           }
           info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
           if (info.description.length > 900) {
@@ -81,12 +80,12 @@ module.exports = class YouTube {
           self.parent.playqueue.push(videoInfo)
           self.parent._saveQueue()
           if (!self.parent.playing) self.parent._player()
-          return resolve(video.info)
+          resolve(videoInfo.info)
         })
         .on('error', e => {
           video.destroy()
           video = undefined
-          return reject(e)
+          reject(e)
         })
         .pipe(stream)
     })
