@@ -1,0 +1,19 @@
+@charset "UTF-8";
+/*
+    AwesomeBot Alero v1.0
+    (c)2017-2018 sKiLdUsT <skil@skildust.com>
+ */
+
+body {
+    background-color: #3c3c3c;
+}
+
+div.container.full-height {
+    height: calc(100vh - 56px);
+}
+
+img.nav-pic {
+    max-height: 32px;
+    margin: 0 .25em;
+    border-radius: 50%;
+}

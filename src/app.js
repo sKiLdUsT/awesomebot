@@ -16,6 +16,7 @@ const NotFoundError = require('./lib/NotFoundError')
 const Bot = require('./bot/Bot')
 const pjson = require('../package')
 const opn = require('opn')
+const Webpanel = require('./lib/Webpanel')
 
 const instances = new Map()
 
@@ -70,6 +71,10 @@ Client
       })
       log.debug('event ClientAttachBotInstancesDone')
       log.info('Ready!')
+    }
+    if (config.Webpanel.enabled) {
+      // Start up web panel
+      Client.webpanel = new Webpanel(instances)
     }
   })
   .on('guildCreate', guild => {

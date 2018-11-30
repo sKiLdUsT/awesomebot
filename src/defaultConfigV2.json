@@ -6,8 +6,17 @@
     "botName" : "Awesomebot"
   },
   "Discord": {
+    "Api" : {
+      "clientId" : "",
+      "secret" : "",
+      "redirect_uri" : "http://localhost/login/callback"
+    },
     "token" : "",
     "adminId" : "",
     "reportErrorsToAdmin" : true
+  },
+  "Webpanel": {
+    "enabled" : "true",
+    "port" : 80
   }
 }
