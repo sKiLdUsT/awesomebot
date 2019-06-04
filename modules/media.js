@@ -10,25 +10,6 @@ let init = false
 
 module.exports = class {
   constructor (instance) {
-    function cleanup () {
-      let files = fs.readdirSync('./cache')
-      let tempfiles = files.filter(file => (/\.(media\.tmp)$/i).test(file))
-      let indexes = files.filter(file => (/\.(media\.json)$/i).test(file))
-      indexes.forEach(index => {
-        let filename = index
-        index = JSON.parse(String(fs.readFileSync('./cache/' + index)))
-        index.forEach(file => {
-          file = file.filename.split('/').pop()
-          if (tempfiles.indexOf(file) !== -1) tempfiles.splice(tempfiles.indexOf(file), 1)
-          else index.splice(index.indexOf(file), 1)
-        })
-        fs.writeFileSync('./cache/' + filename, JSON.stringify(index))
-      })
-      tempfiles.forEach(file => {
-        log.debug('Deleting ' + file)
-        rimraf('./cache/' + file)
-      })
-    }
     this.permissions = ['dj']
     this.playing = false
     this.playqueue = []
@@ -36,8 +17,6 @@ module.exports = class {
     this.instance = instance
     if (!init) {
       init = true
-      cleanup()
-      setInterval(cleanup, 120000)
     }
     if (fs.existsSync(`./cache/${this.instance.guild.id}.media.json`)) this.playqueue = JSON.parse(String(fs.readFileSync(`./cache/${this.instance.guild.id}.media.json`)))
     if (this.playqueue.length > 0) this._player()
@@ -233,77 +212,53 @@ module.exports = class {
     })
   }
   _enqueueSong (url, qOptions, message) {
-    return new Promise((resolve, reject) => {
-      const filename = './cache/' + tools.guid() + '.media.tmp'
-      let video = ytdl(url, {quality: [140, 171, 18, 5], ratebypass: 'yes'})
-      let pTimeout
-      video
-        .on('info', async info => {
-          let maxLength = this.instance.settings.maxLength
-          if (info.length_seconds > maxLength) {
-            video.destroy()
-            video = undefined
-            return reject(new RangeError(`Media longer than ${maxLength / 60} minutes! (${tools.secondsToTimeString(info.length_seconds)})`))
-          }
-          info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
-          if (info.description.length > 900) {
-            info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
-          }
-          this.playqueue.push({channel: qOptions.channel, author: qOptions.author, filename, info, url, pending: true})
-          this._saveQueue()
-        })
-        .on('progress', (chunk, dl, dtotal) => {
-          if (pTimeout) clearTimeout(pTimeout)
-          pTimeout = setTimeout(() => {
-            let progress = Math.floor((dl / dtotal) * 100)
-            let before = '='.repeat(progress < 50 ? Math.floor((progress / 100 * 2) * 11) : 11)
-            let after = '='.repeat(progress > 50 ? Math.floor((progress / 100 / 2) * 11) : 0)
-            before = before + '   '.repeat(11 - before.length)
-            after = after + '   '.repeat(11 - after.length)
-            message.edit(`⏳ Downloading...\n[${before}${progress}%${after}]`)
-          }, 1000)
-        })
-        .on('end', () => {
-          if (pTimeout) clearTimeout(pTimeout)
-          let video = this.playqueue.find(el => el.filename === filename)
-          video.pending = false
-          if (!this.playing) this._player()
-          this._saveQueue()
-          return resolve(video.info)
-        })
-        .on('error', e => {
-          video.destroy()
-          video = undefined
-          reject(e)
-        })
-        .pipe(fs.createWriteStream(filename))
+    return new Promise(async (resolve, reject) => {
+      //let video = ytdl(url, {quality: [140, 171, 18, 5], ratebypass: 'yes'})
+      let info = await ytdl.getInfo(url)
+      let maxLength = this.instance.settings.maxLength
+      if (info.length_seconds > maxLength) {
+        return reject(new RangeError(`Media longer than ${maxLength / 60} minutes! (${tools.secondsToTimeString(info.length_seconds)})`))
+      }
+      info.description = info.description.replace(/((?:http|https):\/\/\S{16})(\S+)/g, '[$1...]($1$2)')
+      if (info.description.length > 900) {
+        info.description = info.description.replace(/^([^]{900}[^\s]*)?([^]+)/, '$1 ...')
+      }
+      this.playqueue.push({channel: qOptions.channel, author: qOptions.author, info, url})
+      this._saveQueue()
+
+      if (!this.playing) this._player()
+
+      resolve(info);
     })
   }
   _player () {
     function play (connection, song) {
       this.playing = true
       try {
-        if (this.dispatcher !== false) this.dispatcher.end()
-        this.dispatcher = connection.playFile(song.filename)
+        //if (this.dispatcher !== false) this.dispatcher.end()
+        const stream = ytdl.downloadFromInfo(song.info, {quality: [140, 171, 18, 5], ratebypass: 'yes'})
+        this.dispatcher = connection.playStream(stream)
         this.dispatcher.setVolume(this.instance.settings.volume)
-        this.dispatcher.setBitrate(128)
+        this.dispatcher.setBitrate(64)
         this.dispatcher.duration = song.info.length_seconds
         this.dispatcher.song = song.info.title
         this.dispatcher.url = song.url
         this.dispatcher
-          .on('end', () => {
+          .on('end', reason => {
+            if (reason) log.debug(reason)
             this.playqueue.shift()
-            setTimeout(() => fs.unlink(song.filename, () => {}), 5000)
+            this._saveQueue()
             this._player()
           })
+          .on('error', log.debug)
         this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.info.title}" is now playing in ${connection.channel.name}!`)
-        this._saveQueue()
+        //this._saveQueue()
       } catch (e) {
         this.playing = false
         throw e
       }
     }
-    let queue = this.playqueue.filter(e => !e.pending)
+    let queue = this.playqueue
     if (queue.length > 0) {
       let song = queue.slice(0, 1)[0]
       if (this.instance.guild.voiceConnection) {
