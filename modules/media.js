@@ -234,29 +234,31 @@ module.exports = class {
   _player () {
     function play (connection, song) {
       this.playing = true
-      try {
-        //if (this.dispatcher !== false) this.dispatcher.end()
-        const stream = ytdl.downloadFromInfo(song.info, {quality: [140, 171, 18, 5], ratebypass: 'yes'})
-        this.dispatcher = connection.playStream(stream)
-        this.dispatcher.setVolume(this.instance.settings.volume)
-        this.dispatcher.setBitrate(64)
-        this.dispatcher.duration = song.info.length_seconds
-        this.dispatcher.song = song.info.title
-        this.dispatcher.url = song.url
-        this.dispatcher
-          .on('end', reason => {
-            if (reason) log.debug(reason)
-            this.playqueue.shift()
-            this._saveQueue()
-            this._player()
-          })
-          .on('error', log.debug)
-        this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.info.title}" is now playing in ${connection.channel.name}!`)
-        //this._saveQueue()
-      } catch (e) {
-        this.playing = false
-        throw e
-      }
+      //if (this.dispatcher !== false) this.dispatcher.end()
+      const stream = ytdl.downloadFromInfo(song.info, {quality: [140, 171, 18, 5], ratebypass: 'yes'})
+      setTimeout(() => {
+        try {
+          this.dispatcher = connection.playStream(stream)
+          this.dispatcher.setVolume(this.instance.settings.volume)
+          this.dispatcher.setBitrate(64)
+          this.dispatcher.duration = song.info.length_seconds
+          this.dispatcher.song = song.info.title
+          this.dispatcher.url = song.url
+          this.dispatcher
+            .on('end', reason => {
+              if (reason) log.debug(reason)
+              this.playqueue.shift()
+              this._saveQueue()
+              this._player()
+            })
+            .on('error', log.debug)
+          this.instance.guild.channels.get(song.channel).send(`ℹ <@${song.author}> your song "${song.info.title}" is now playing in ${connection.channel.name}!`)
+          //this._saveQueue()
+        } catch (e) {
+          this.playing = false
+          throw e
+        }
+      }, 1000)
     }
     let queue = this.playqueue
     if (queue.length > 0) {
